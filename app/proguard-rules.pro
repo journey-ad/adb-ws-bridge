@@ -1,0 +1,1 @@
+-keep class moe.shizuku.manager.adb.** { *; }
