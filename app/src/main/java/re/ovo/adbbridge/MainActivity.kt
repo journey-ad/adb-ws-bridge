@@ -7,11 +7,11 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import re.ovo.adbbridge.bridge.BridgeService
-import re.ovo.adbbridge.ui.MainScreen
-import re.ovo.adbbridge.ui.theme.AdbBridgeTheme
+import re.ovo.adbbridge.ui.AppContent
 
 class MainActivity : ComponentActivity() {
 
@@ -21,6 +21,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
             != PackageManager.PERMISSION_GRANTED
@@ -29,9 +30,7 @@ class MainActivity : ComponentActivity() {
         }
         handleAction(intent)
         setContent {
-            AdbBridgeTheme {
-                MainScreen()
-            }
+            AppContent()
         }
     }
 

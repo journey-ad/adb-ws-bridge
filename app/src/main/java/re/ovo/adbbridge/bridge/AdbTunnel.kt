@@ -32,7 +32,7 @@ class AdbTunnel(
     lateinit var output: OutputStream
         private set
 
-    /** 设备回给客户端的 CNXN 原始报文，用于本地应答浏览器握手 */
+    /** 设备返回的 CNXN 原始报文，用于本地应答浏览器握手 */
     lateinit var bannerPacket: ByteArray
         private set
 
@@ -156,7 +156,7 @@ class AdbTunnel(
 
         /**
          * 握手时声明的能力列表
-         * 不含 delayed_ack：隧道只透传字节，无法替客户端维护延迟确认所需的收发计数
+         * 不含 delayed_ack：隧道透传字节，延迟确认所需的收发计数由客户端维护
          * 未协商延迟确认时，adbd 要求 OPEN 报文的初始窗口为 0
          */
         private val SYSTEM_IDENTITY = "host::features=" + listOf(

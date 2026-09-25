@@ -1,18 +1,27 @@
 package re.ovo.adbbridge.ui
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.automirrored.outlined.Article
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.SwapHoriz
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -22,89 +31,122 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import re.ovo.adbbridge.bridge.BridgeService
 import re.ovo.adbbridge.bridge.BridgeStatus
-import re.ovo.adbbridge.util.getLanAddress
+import re.ovo.adbbridge.ui.theme.AdbBridgeTheme
+
+private enum class Screen(val title: String, val label: String) {
+    BRIDGE("ADB 桥", "转发"),
+    LOG("日志", "日志"),
+    SETTINGS("设置", "设置"),
+    HISTORY("历史会话", "日志"),
+}
+
+@Composable
+fun AppContent() {
+    AdbBridgeTheme {
+        Surface(modifier = Modifier.fillMaxSize()) {
+            MainScreen()
+        }
+    }
+}
 
 @Composable
 fun MainScreen(viewModel: MainViewModel = viewModel()) {
-    val paired by BridgeStatus.paired.collectAsState()
     val running by BridgeStatus.running.collectAsState()
-    val pairingPort by BridgeStatus.pairingPort.collectAsState()
-    val connectionCount by BridgeStatus.connectionCount.collectAsState()
-    val logs by BridgeStatus.logs.collectAsState()
-    var code by remember { mutableStateOf("") }
+    val paired by BridgeStatus.paired.collectAsState()
+    val connection by BridgeStatus.connection.collectAsState()
+    val status = appStatus(running = running, paired = paired, connected = connection != null)
+    var screen by remember { mutableStateOf(Screen.BRIDGE) }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .safeDrawingPadding(),
     ) {
-        Text(text = "ADB 桥", style = MaterialTheme.typography.headlineMedium)
-
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(
-                    text = if (paired) "已配对" else "未配对",
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    text = "请在开发者选项中开启无线调试，点「使用配对码配对设备」后开始配对，配对码在通知里输入",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Button(onClick = { viewModel.startPairing() }) {
-                    Text(text = "开始配对")
-                }
-                if (pairingPort > 0) {
-                    Text(text = "配对端口：$pairingPort", style = MaterialTheme.typography.bodyMedium)
-                }
-                OutlinedTextField(
-                    value = code,
-                    onValueChange = { code = it },
-                    label = { Text(text = "手动输入配对码") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Button(onClick = { viewModel.pair(code) }) {
-                    Text(text = "手动配对")
+        TopBar(title = screen.title, status = status)
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .imePadding(),
+        ) {
+            AnimatedContent(
+                targetState = screen,
+                transitionSpec = { slideFade() },
+                modifier = Modifier.fillMaxSize().clipToBounds(),
+                label = "screen",
+            ) { target ->
+                when (target) {
+                    Screen.BRIDGE -> BridgeScreen(viewModel)
+                    Screen.LOG -> LogScreen(viewModel, onOpenHistory = { screen = Screen.HISTORY })
+                    Screen.SETTINGS -> SettingsScreen(viewModel)
+                    Screen.HISTORY -> HistoryScreen(viewModel, onBack = { screen = Screen.LOG })
                 }
             }
         }
+        ScreenBar(
+            current = if (screen == Screen.HISTORY) Screen.LOG else screen,
+            onSelect = { screen = it },
+        )
+    }
+}
 
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "转发服务", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                    Switch(checked = running, onCheckedChange = { checked ->
-                        if (checked) viewModel.startBridge() else viewModel.stopBridge()
-                    })
-                }
-                Text(
-                    text = "ws://${getLanAddress() ?: "127.0.0.1"}:${BridgeService.WS_PORT}/adb",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Text(text = "当前连接：$connectionCount", style = MaterialTheme.typography.bodyMedium)
-            }
+@Composable
+private fun TopBar(title: String, status: AppStatus) {
+    Row(
+        modifier = Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AnimatedContent(
+            targetState = title,
+            transitionSpec = { crossFade() },
+            label = "topBarTitle",
+        ) { value ->
+            Text(text = value, style = MaterialTheme.typography.titleMedium)
         }
+        Spacer(modifier = Modifier.weight(1f))
+        AnimatedContent(
+            targetState = status,
+            transitionSpec = { crossFade() },
+            label = "topBarStatus",
+        ) { value ->
+            StatusChip(text = value.text, color = value.color)
+        }
+    }
+}
 
-        Text(text = "日志", style = MaterialTheme.typography.titleMedium)
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(logs) { line ->
-                Text(
-                    text = line,
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+@Composable
+private fun ScreenBar(current: Screen, onSelect: (Screen) -> Unit) {
+    NavigationBar(
+        modifier = Modifier.height(54.dp),
+        containerColor = MaterialTheme.colorScheme.background,
+        tonalElevation = 0.dp,
+    ) {
+        Screen.entries.filter { it != Screen.HISTORY }.forEach { screen ->
+            val icon = remember(screen) {
+                when (screen) {
+                    Screen.BRIDGE -> Icons.Outlined.SwapHoriz
+                    Screen.LOG, Screen.HISTORY -> Icons.AutoMirrored.Outlined.Article
+                    Screen.SETTINGS -> Icons.Outlined.Settings
+                }
             }
+            NavigationBarItem(
+                selected = current == screen,
+                onClick = { onSelect(screen) },
+                icon = {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                },
+                label = { Text(text = screen.label, style = MaterialTheme.typography.labelMedium) },
+                alwaysShowLabel = true,
+                modifier = Modifier.padding(vertical = 2.dp),
+            )
         }
     }
 }

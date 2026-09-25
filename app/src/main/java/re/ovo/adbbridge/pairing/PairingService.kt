@@ -15,14 +15,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import re.ovo.adbbridge.MainActivity
 import re.ovo.adbbridge.bridge.BridgeStatus
 
 /**
- * 配对期间常驻：在通知里提供配对码输入框，用户不必离开系统设置页
+ * 配对期间常驻，通知里提供配对码输入框，配对码取自系统开发者选项的无线调试页面
  */
 class PairingService : Service() {
 
@@ -92,7 +93,14 @@ class PairingService : Service() {
 
     private fun notifyPlain(title: String, text: String) {
         getSystemService(NotificationManager::class.java)
-            .notify(NOTIFICATION_ID, builder().setContentTitle(title).setContentText(text).build())
+            .notify(
+                NOTIFICATION_ID,
+                builder(ongoing = false)
+                    .setContentTitle(title)
+                    .setContentText(text)
+                    .setAutoCancel(true)
+                    .build(),
+            )
     }
 
     private fun notifyInput(port: Int) {
@@ -117,7 +125,7 @@ class PairingService : Service() {
         )
     }
 
-    private fun builder(): NotificationCompat.Builder {
+    private fun builder(ongoing: Boolean = true): NotificationCompat.Builder {
         val manager = getSystemService(NotificationManager::class.java)
         if (manager.getNotificationChannel(CHANNEL_ID) == null) {
             manager.createNotificationChannel(
@@ -126,7 +134,18 @@ class PairingService : Service() {
         }
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_sys_data_bluetooth)
-            .setOngoing(true)
+            .setOngoing(ongoing)
+            .setContentIntent(openAppIntent())
+    }
+
+    private fun openAppIntent(): PendingIntent {
+        val intent = Intent(this, MainActivity::class.java).setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        return PendingIntent.getActivity(
+            this,
+            NOTIFICATION_ID,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
     }
 
     override fun onDestroy() {
