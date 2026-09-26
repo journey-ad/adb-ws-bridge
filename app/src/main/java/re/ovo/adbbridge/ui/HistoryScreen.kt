@@ -56,6 +56,7 @@ private val REVEAL_WIDTH = 72.dp
 fun HistoryScreen(viewModel: MainViewModel, onBack: () -> Unit) {
     val sessions by LogRepository.sessions.collectAsState()
     val selectedId by LogRepository.selectedId.collectAsState()
+    val activeId by LogRepository.activeId.collectAsState()
     var clearingAll by remember { mutableStateOf(false) }
     var revealedId by remember { mutableStateOf<String?>(null) }
     var pendingDelete by remember { mutableStateOf<LogSession?>(null) }
@@ -100,6 +101,7 @@ fun HistoryScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                 SessionItem(
                     session = session,
                     selected = session.id == selectedId,
+                    current = session.id == activeId,
                     revealed = revealedId == session.id,
                     modifier = itemAnimation(),
                     onReveal = { open -> revealedId = if (open) session.id else null },
@@ -167,6 +169,7 @@ fun HistoryScreen(viewModel: MainViewModel, onBack: () -> Unit) {
 private fun SessionItem(
     session: LogSession,
     selected: Boolean,
+    current: Boolean,
     revealed: Boolean,
     modifier: Modifier = Modifier,
     onReveal: (Boolean) -> Unit,
@@ -202,6 +205,7 @@ private fun SessionItem(
         SessionRow(
             session = session,
             selected = selected,
+            current = current,
             modifier = Modifier
                 .offset { IntOffset(-offset.value.toInt(), 0) }
                 .clickable {
@@ -227,7 +231,12 @@ private fun SessionItem(
 }
 
 @Composable
-private fun SessionRow(session: LogSession, selected: Boolean, modifier: Modifier = Modifier) {
+private fun SessionRow(
+    session: LogSession,
+    selected: Boolean,
+    current: Boolean,
+    modifier: Modifier = Modifier,
+) {
     val corner = RoundedCornerShape(12.dp)
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -260,7 +269,7 @@ private fun SessionRow(session: LogSession, selected: Boolean, modifier: Modifie
                     },
                 )
             }
-            if (selected && !session.isAppSession) {
+            if (current) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(text = stringResource(R.string.log_session_current), style = MaterialTheme.typography.labelSmall)
             }

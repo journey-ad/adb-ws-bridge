@@ -316,7 +316,7 @@ fun PasswordDialog(
     )
 }
 
-/** 密码只允许字母数字与常用符号，避免 URL 查询参数里出现歧义字符 */
+/** 密码只允许字母数字与常用符号，URL 查询参数里不含歧义字符 */
 private val PASSWORD_ALLOWED = Regex("[A-Za-z0-9_.@\\-#*&]+")
 
 private fun sanitizePassword(value: String): String =

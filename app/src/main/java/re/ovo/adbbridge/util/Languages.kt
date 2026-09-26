@@ -19,7 +19,33 @@ fun Context.withAppLanguage(language: AppLanguage): Context {
     return createConfigurationContext(config)
 }
 
-/** 应用级上下文不随界面重建，取文案时按当前选择重新包装 */
+private val localizedLock = Any()
+
+@Volatile
+private var localizedLanguage: AppLanguage? = null
+
+@Volatile
+private var localizedContext: Context? = null
+
+/**
+ * 应用级上下文不随界面重建，取文案时按当前选择重新包装
+ * 日志与通知取文案的频率很高，包装结果按语言缓存，同一语言共用一份配置上下文
+ */
 fun Context.appString(resId: Int, vararg args: Any?): String {
-    return applicationContext.withAppLanguage(AppPrefs.language.value).getString(resId, *args)
+    return localizedContext().getString(resId, *args)
+}
+
+private fun Context.localizedContext(): Context {
+    val language = AppPrefs.language.value
+    if (language == AppLanguage.SYSTEM) return applicationContext
+    val cached = localizedContext
+    if (cached != null && localizedLanguage == language) return cached
+    synchronized(localizedLock) {
+        val again = localizedContext
+        if (again != null && localizedLanguage == language) return again
+        val created = applicationContext.withAppLanguage(language)
+        localizedLanguage = language
+        localizedContext = created
+        return created
+    }
 }

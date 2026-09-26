@@ -1,8 +1,15 @@
 package re.ovo.adbbridge.util
 
+import java.text.SimpleDateFormat
 import java.util.Locale
 
 private const val KILO = 1024.0
+
+private val clockFormat: ThreadLocal<SimpleDateFormat> =
+    ThreadLocal.withInitial { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
+
+private val timestampFormat: ThreadLocal<SimpleDateFormat> =
+    ThreadLocal.withInitial { SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()) }
 
 fun formatBytes(bytes: Long): String {
     if (bytes < 1024) return "$bytes B"
@@ -13,7 +20,8 @@ fun formatBytes(bytes: Long): String {
         value /= KILO
         index++
     }
-    return String.format(Locale.getDefault(), "%.1f %s", value, units[index])
+    val scaled = (value * 10).toLong()
+    return "${scaled / 10}.${scaled % 10} ${units[index]}"
 }
 
 fun formatRate(bytesPerSecond: Long): String {
@@ -27,31 +35,22 @@ fun formatDuration(millis: Long): String {
     val minutes = total % 3600 / 60
     val seconds = total % 60
     return if (hours > 0) {
-        String.format(Locale.getDefault(), "%d:%02d:%02d", hours, minutes, seconds)
+        "$hours:${digits(minutes)}:${digits(seconds)}"
     } else {
-        String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
+        "${digits(minutes)}:${digits(seconds)}"
     }
 }
 
+/** 日志每行都要取时间，格式器按线程复用，同一线程共用一份日历与格式化实例 */
 fun formatClock(timestamp: Long): String {
-    val calendar = java.util.Calendar.getInstance().apply { timeInMillis = timestamp }
-    return String.format(
-        Locale.getDefault(),
-        "%02d:%02d:%02d",
-        calendar.get(java.util.Calendar.HOUR_OF_DAY),
-        calendar.get(java.util.Calendar.MINUTE),
-        calendar.get(java.util.Calendar.SECOND),
-    )
+    return checkNotNull(clockFormat.get()).format(timestamp)
 }
 
-fun formatDateTime(timestamp: Long): String {
-    val calendar = java.util.Calendar.getInstance().apply { timeInMillis = timestamp }
-    return String.format(
-        Locale.getDefault(),
-        "%02d-%02d %02d:%02d",
-        calendar.get(java.util.Calendar.MONTH) + 1,
-        calendar.get(java.util.Calendar.DAY_OF_MONTH),
-        calendar.get(java.util.Calendar.HOUR_OF_DAY),
-        calendar.get(java.util.Calendar.MINUTE),
-    )
+/** 完整到秒的时刻，日期带年份 */
+fun formatTimestamp(timestamp: Long): String {
+    return checkNotNull(timestampFormat.get()).format(timestamp)
+}
+
+private fun digits(value: Long): String {
+    return if (value < 10) "0$value" else value.toString()
 }

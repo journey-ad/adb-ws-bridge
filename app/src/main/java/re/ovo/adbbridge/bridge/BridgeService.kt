@@ -7,16 +7,23 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder
+import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import re.ovo.adbbridge.MainActivity
 import re.ovo.adbbridge.R
 import re.ovo.adbbridge.data.AppPrefs
 import re.ovo.adbbridge.data.LogCategory
 import re.ovo.adbbridge.data.LogRepository
+import re.ovo.adbbridge.perf.PerfTrace
 import re.ovo.adbbridge.pairing.PairingManager
 import re.ovo.adbbridge.util.appString
 import re.ovo.adbbridge.util.formatBytes
@@ -25,6 +32,7 @@ import re.ovo.adbbridge.util.getLanAddress
 
 class BridgeService : Service() {
 
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private lateinit var pairing: PairingManager
     private var server: BridgeServer? = null
     @Volatile
@@ -32,6 +40,9 @@ class BridgeService : Service() {
 
     @Volatile
     private var pendingRemote: String? = null
+
+    private var notifiedAt = 0L
+    private var notifiedKey: String? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -72,20 +83,22 @@ class BridgeService : Service() {
 
         startForeground(NOTIFICATION_ID, buildNotification(null))
 
+        // 端口发现在协程里等待完成，主线程继续处理界面
         pairing.discoverConnectPort()
-        val port = runBlocking {
-            repeat(50) {
-                if (BridgeStatus.connectPort.value > 0) return@runBlocking BridgeStatus.connectPort.value
-                delay(100)
+        scope.launch {
+            val port = withTimeoutOrNull(DISCOVERY_TIMEOUT_MS) {
+                BridgeStatus.connectPort.first { it > 0 }
             }
-            0
+            if (port == null) {
+                BridgeStatus.log(appString(R.string.log_no_connect_port))
+                stop()
+                return@launch
+            }
+            startServer()
         }
-        if (port == 0) {
-            BridgeStatus.log(appString(R.string.log_no_connect_port))
-            stop()
-            return
-        }
+    }
 
+    private fun startServer() {
         server = BridgeServer(
             context = applicationContext,
             port = AppPrefs.wsPort.value,
@@ -93,7 +106,7 @@ class BridgeService : Service() {
             verifyPassword = { AppPrefs.verify(it) },
             authorize = { remote -> requestAuth(remote) },
             onSessionChanged = { snapshot ->
-                BridgeStatus.connection.value = snapshot
+                BridgeStatus.setConnection(snapshot)
                 updateNotification(snapshot)
             },
             onLog = { sessionId, category, message ->
@@ -105,7 +118,7 @@ class BridgeService : Service() {
         LogRepository.append(null, LogCategory.ACTION, appString(R.string.log_bridge_started))
     }
 
-    /** 新客户端必须经本机确认，已授权过的地址不再询问 */
+    /** 新客户端必须经本机确认，已授权过的地址直接放行 */
     private suspend fun requestAuth(remote: String): Boolean {
         if (AppPrefs.isTrusted(remote)) return true
         val deferred = CompletableDeferred<Boolean>()
@@ -187,7 +200,7 @@ class BridgeService : Service() {
         server?.close()
         server = null
         BridgeStatus.running.value = false
-        BridgeStatus.connection.value = null
+        BridgeStatus.setConnection(null)
         if (::pairing.isInitialized) {
             pairing.stopDiscovery()
         }
@@ -271,9 +284,15 @@ class BridgeService : Service() {
         )
     }
 
+    /** 快照每秒刷新，通知按最小间隔重建；连接结束立即刷新 */
     private fun updateNotification(snapshot: ConnectionSnapshot?) {
-        val manager = getSystemService(NotificationManager::class.java)
-        manager.notify(NOTIFICATION_ID, buildNotification(snapshot))
+        val now = SystemClock.elapsedRealtime()
+        if (snapshot != null && now - notifiedAt < NOTIFY_MIN_INTERVAL_MS) return
+        notifiedAt = now
+        PerfTrace.measure("notify.update") {
+            getSystemService(NotificationManager::class.java)
+                .notify(NOTIFICATION_ID, buildNotification(snapshot))
+        }
     }
 
     companion object {
@@ -291,5 +310,13 @@ class BridgeService : Service() {
         private const val ALLOW_REQUEST_CODE = 3
         private const val DENY_REQUEST_CODE = 4
         private const val AUTH_TIMEOUT_MS = 60_000L
+        private const val DISCOVERY_TIMEOUT_MS = 5_000L
+        private const val NOTIFY_MIN_INTERVAL_MS = 2_000L
+    }
+
+    override fun onDestroy() {
+        pendingAuth?.complete(false)
+        scope.cancel()
+        super.onDestroy()
     }
 }

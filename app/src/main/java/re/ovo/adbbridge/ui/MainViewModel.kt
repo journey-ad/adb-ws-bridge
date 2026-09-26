@@ -26,6 +26,7 @@ import re.ovo.adbbridge.data.AppPrefs
 import re.ovo.adbbridge.data.LogCategory
 import re.ovo.adbbridge.data.LogEntry
 import re.ovo.adbbridge.data.LogRepository
+import re.ovo.adbbridge.perf.PerfTrace
 import re.ovo.adbbridge.pairing.PairingManager
 import re.ovo.adbbridge.pairing.PairingService
 import re.ovo.adbbridge.util.appString
@@ -52,16 +53,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         logQuery,
         logCategory,
     ) { entries, query, category ->
-        entries.filter { entry ->
-            (category == null || entry.category == category) &&
-                (query.isBlank() || entry.message.contains(query, ignoreCase = true))
+        PerfTrace.measure("log.filter") {
+            if (category == null && query.isBlank()) return@measure entries.takeLast(LOG_WINDOW)
+            entries.filter { entry ->
+                (category == null || entry.category == category) &&
+                    (query.isBlank() || entry.message.contains(query, ignoreCase = true))
+            }.takeLast(LOG_WINDOW)
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     init {
         BridgeStatus.paired.value = pairing.isPaired
         refreshPaired()
-        LogRepository.select(LogRepository.sessions.value.firstOrNull()?.id ?: LogRepository.APP_SESSION)
+        viewModelScope.launch(Dispatchers.IO) {
+            LogRepository.select(LogRepository.sessions.value.firstOrNull()?.id ?: LogRepository.APP_SESSION)
+        }
     }
 
     /** 系统里撤销无线调试授权后应用无从得知，回到前台或启动转发前重新确认一次 */
@@ -144,24 +150,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         logAction(text(R.string.log_password_disabled))
     }
 
+    /** 读写日志文件走 IO 线程，界面只负责收集结果 */
     fun selectLogSession(id: String) {
-        LogRepository.select(id)
+        viewModelScope.launch(Dispatchers.IO) { LogRepository.select(id) }
     }
 
     fun deleteLogSession(id: String) {
-        LogRepository.clear(id)
+        viewModelScope.launch(Dispatchers.IO) { LogRepository.clear(id) }
         logAction(text(R.string.log_session_deleted))
     }
 
     fun clearLogSession() {
         val id = LogRepository.selectedId.value
-        LogRepository.clear(id)
+        viewModelScope.launch(Dispatchers.IO) { LogRepository.clear(id) }
         logAction(text(R.string.log_session_cleared))
     }
 
     fun clearAllLogs() {
-        LogRepository.clear(null)
-        LogRepository.select(LogRepository.APP_SESSION)
+        viewModelScope.launch(Dispatchers.IO) {
+            LogRepository.clear(null)
+            LogRepository.select(LogRepository.APP_SESSION)
+        }
         logAction(text(R.string.log_all_cleared))
     }
 
@@ -185,6 +194,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     companion object {
+        /** 界面一次最多渲染的条数，长会话只把尾部交给列表 */
+        const val LOG_WINDOW = 300
         private const val RESTART_DELAY_MS = 600L
         private const val SETTINGS_FRAGMENT_ARGS_KEY = ":settings:fragment_args_key"
         private const val WIRELESS_DEBUGGING_KEY = "toggle_adb_wireless"

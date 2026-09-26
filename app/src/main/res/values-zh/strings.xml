@@ -109,7 +109,8 @@
     <string name="log_toggle_autoscroll_desc">新日志出现时滚动到最新一条</string>
     <string name="log_session_app">应用操作</string>
     <string name="log_session_from">来自 %1$s</string>
-    <string name="log_session_summary">%1$s · %2$d 条 · %3$s</string>
+    <string name="log_session_summary">%1$s · %2$d 条 · 时长 %3$s</string>
+    <string name="log_session_summary_short">%1$s · %2$d 条</string>
 
     <!-- 历史会话页 -->
     <string name="history_count">共 %1$d 个会话，左滑条目可删除</string>

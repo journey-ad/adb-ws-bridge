@@ -1,7 +1,5 @@
 package re.ovo.adbbridge.ui
 
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,14 +47,20 @@ import re.ovo.adbbridge.data.LogCategory
 import re.ovo.adbbridge.data.LogEntry
 import re.ovo.adbbridge.data.LogRepository
 import re.ovo.adbbridge.data.LogSession
+import re.ovo.adbbridge.perf.PerfTrace
+import re.ovo.adbbridge.perf.TraceComposition
 import re.ovo.adbbridge.util.formatClock
-import re.ovo.adbbridge.util.formatDateTime
 import re.ovo.adbbridge.util.formatDuration
+import re.ovo.adbbridge.util.formatTimestamp
 
 private enum class LogBody { DISABLED, IDLE, LIST }
 
+/** 日志行定高，列表滚动定位不逐项测量 */
+private val LOG_ROW_HEIGHT = 34.dp
+
 @Composable
 fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
+    TraceComposition("compose.LogScreen")
     val running by BridgeStatus.running.collectAsState()
     val logOn by AppPrefs.logEnabled.collectAsState()
     val persisting by AppPrefs.logPersist.collectAsState()
@@ -65,7 +69,10 @@ fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
     val query by viewModel.logQuery.collectAsState()
     val category by viewModel.logCategory.collectAsState()
     val entries by viewModel.logEntries.collectAsState()
-    val listState = rememberLazyListState()
+    // 列表初始位置落在末尾，进入页面时不从首项滚动
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = entries.lastIndex.coerceAtLeast(0),
+    )
     var autoScroll by remember { mutableStateOf(true) }
     var clearing by remember { mutableStateOf(false) }
     var settingsDialog by remember { mutableStateOf(false) }
@@ -79,9 +86,17 @@ fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
         else -> LogBody.LIST
     }
 
-    LaunchedEffect(entries.size, selectedId, autoScroll) {
+    // 切换会话时定位到末尾，之后只在用户本来就停在末尾时才跟随新日志
+    // 用请求式滚动，挂起版会在长列表里一直等待布局稳定
+    LaunchedEffect(selectedId, autoScroll) {
         if (autoScroll && entries.isNotEmpty()) {
-            listState.scrollToItem(entries.lastIndex)
+            PerfTrace.measure("log.scrollToEnd") { listState.requestScrollToItem(entries.lastIndex) }
+        }
+    }
+
+    LaunchedEffect(entries.size) {
+        if (autoScroll && !listState.canScrollForward && entries.isNotEmpty()) {
+            PerfTrace.measure("log.scrollToEnd") { listState.requestScrollToItem(entries.lastIndex) }
         }
     }
 
@@ -151,20 +166,14 @@ fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
                 )
             }
         }
-        Crossfade(
-            targetState = body,
-            animationSpec = tween(180),
-            label = "logBody",
-        ) { state ->
-            when (state) {
-                LogBody.DISABLED -> EmptyLog(message = stringResource(R.string.log_empty_disabled))
-                LogBody.IDLE -> EmptyLog(message = stringResource(R.string.log_empty_idle))
-                LogBody.LIST -> LogList(
-                    entries = entries,
-                    listState = listState,
-                    onSelect = { detail = it },
-                )
-            }
+        when (body) {
+            LogBody.DISABLED -> EmptyLog(message = stringResource(R.string.log_empty_disabled))
+            LogBody.IDLE -> EmptyLog(message = stringResource(R.string.log_empty_idle))
+            LogBody.LIST -> LogList(
+                entries = entries,
+                listState = listState,
+                onSelect = { detail = it },
+            )
         }
     }
 
@@ -233,7 +242,7 @@ fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
                 Column {
                     DetailRow(
                         label = stringResource(R.string.log_detail_time),
-                        value = "${formatDateTime(entry.time)} ${formatClock(entry.time)}",
+                        value = formatTimestamp(entry.time),
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     DetailRow(
@@ -247,7 +256,7 @@ fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
                     Spacer(modifier = Modifier.height(4.dp))
                     DetailRow(
                         label = stringResource(R.string.log_detail_source),
-                        value = selected?.let { sessionLabel(it) } ?: stringResource(R.string.log_session_current),
+                        value = selected?.let { sessionSource(it) } ?: stringResource(R.string.log_session_current),
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     DetailRow(label = stringResource(R.string.log_detail_content), value = entry.message)
@@ -283,7 +292,7 @@ private fun LogList(
                 )
             }
         }
-        items(entries) { entry ->
+        items(entries, key = { it.seq }) { entry ->
             LogRow(entry = entry, onClick = { onSelect(entry) })
         }
     }
@@ -357,8 +366,11 @@ private fun LogRow(entry: LogEntry, onClick: () -> Unit) {
         MaterialTheme.colorScheme.primary
     }
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp).clickable(onClick = onClick),
-        verticalAlignment = Alignment.Top,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(LOG_ROW_HEIGHT)
+            .clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = formatClock(entry.time),
@@ -394,22 +406,25 @@ private fun LogRow(entry: LogEntry, onClick: () -> Unit) {
     }
 }
 
+/** 会话标题只给开始时刻，来源交给下面的摘要行 */
 @Composable
 fun sessionLabel(session: LogSession): String {
     if (session.isAppSession) return stringResource(R.string.log_session_app)
-    val remote = session.remote.takeIf { it.isNotBlank() }
-    return if (remote == null) {
-        formatDateTime(session.startAt)
-    } else {
-        "${formatDateTime(session.startAt)} · $remote"
-    }
+    return formatTimestamp(session.startAt)
+}
+
+@Composable
+private fun sessionSource(session: LogSession): String {
+    if (session.isAppSession) return stringResource(R.string.log_session_app)
+    return session.remote.takeIf { it.isNotBlank() } ?: stringResource(R.string.log_session_app)
 }
 
 @Composable
 fun summary(session: LogSession): String {
-    val span = (session.endAt - session.startAt).coerceAtLeast(0)
     val remote = session.remote.takeIf { it.isNotBlank() }
     val source = remote?.let { stringResource(R.string.log_session_from, it) }
         ?: stringResource(R.string.log_session_app_summary)
+    if (remote == null) return stringResource(R.string.log_session_summary_short, source, session.count)
+    val span = (session.endAt - session.startAt).coerceAtLeast(0)
     return stringResource(R.string.log_session_summary, source, session.count, formatDuration(span))
 }

@@ -20,6 +20,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import re.ovo.adbbridge.R
 import re.ovo.adbbridge.data.LogCategory
 import re.ovo.adbbridge.data.LogRepository
@@ -80,7 +81,8 @@ class BridgeServer(
                         return@webSocket
                     }
                     // 先确认浏览器完成握手，浏览器提前断开时不留下无人使用的隧道
-                    val first = readFirstPacket(ws)
+                    // 只连上不发数据的客户端不能一直占着唯一的连接位
+                    val first = withTimeoutOrNull(HANDSHAKE_TIMEOUT_MS) { readFirstPacket(ws) }
                     if (first == null) {
                         sessionFree.set(true)
                         onLog(
@@ -300,5 +302,6 @@ class BridgeServer(
 
     companion object {
         private const val SAMPLE_INTERVAL_MS = 1000L
+        private const val HANDSHAKE_TIMEOUT_MS = 10_000L
     }
 }

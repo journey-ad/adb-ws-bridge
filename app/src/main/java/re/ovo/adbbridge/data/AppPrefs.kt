@@ -9,7 +9,7 @@ enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 enum class AppLanguage { SYSTEM, ENGLISH, CHINESE }
 
-/** 连接密码与主题偏好，密码以明文保存以便复制完整的连接地址 */
+/** 连接密码与主题偏好，密码以明文保存，连接地址可直接复制 */
 object AppPrefs {
 
     private const val FILE = "settings"

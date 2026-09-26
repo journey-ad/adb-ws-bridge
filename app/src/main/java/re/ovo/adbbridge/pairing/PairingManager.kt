@@ -22,7 +22,8 @@ class PairingManager(context: Context) {
     private val keyStore = PreferenceAdbKeyStore(preferences)
     private val appContext = context.applicationContext
 
-    val key = AdbKey(keyStore, KEY_NAME)
+    /** RSA 钥匙在首次使用时构造，密钥库读取与签名运算不在界面线程进行 */
+    val key: AdbKey by lazy { AdbKey(keyStore, KEY_NAME) }
 
     private var pairingMdns: AdbMdns? = null
     private var connectMdns: AdbMdns? = null

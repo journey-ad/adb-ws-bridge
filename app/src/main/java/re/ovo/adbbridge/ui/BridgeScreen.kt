@@ -51,8 +51,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import re.ovo.adbbridge.R
 import re.ovo.adbbridge.bridge.BridgeStatus
-import re.ovo.adbbridge.bridge.ConnectionSnapshot
 import re.ovo.adbbridge.data.AppPrefs
+import re.ovo.adbbridge.perf.TraceComposition
 import re.ovo.adbbridge.ui.theme.LocalStatusColors
 import re.ovo.adbbridge.util.formatBytes
 import re.ovo.adbbridge.util.formatDuration
@@ -74,10 +74,12 @@ fun appStatus(running: Boolean, paired: Boolean, connected: Boolean): AppStatus 
 
 @Composable
 fun BridgeScreen(viewModel: MainViewModel) {
+    TraceComposition("compose.BridgeScreen")
     val context = LocalContext.current
     val running by BridgeStatus.running.collectAsState()
     val paired by BridgeStatus.paired.collectAsState()
-    val connection by BridgeStatus.connection.collectAsState()
+    // 快照每秒更新，只把是否连接留在这一层，具体数值由连接卡片自己收集
+    val connected by BridgeStatus.connected.collectAsState()
     val pairingPort by BridgeStatus.pairingPort.collectAsState()
     val passwordEnabled by viewModel.passwordEnabled.collectAsState()
     val password by AppPrefs.password.collectAsState()
@@ -119,13 +121,10 @@ fun BridgeScreen(viewModel: MainViewModel) {
                 }
             }
         }
-        connection?.let { snapshot ->
+        if (connected) {
             item(key = "connection") {
                 Box(modifier = itemAnimation()) {
-                    ConnectionCard(
-                        connection = snapshot,
-                        onDisconnect = { viewModel.disconnect() },
-                    )
+                    ConnectionCard(onDisconnect = { viewModel.disconnect() })
                 }
             }
         }
@@ -298,7 +297,8 @@ private fun AddressCard(
 }
 
 @Composable
-private fun ConnectionCard(connection: ConnectionSnapshot, onDisconnect: () -> Unit) {
+private fun ConnectionCard(onDisconnect: () -> Unit) {
+    val connection = BridgeStatus.connection.collectAsState().value ?: return
     SectionCard(
         title = stringResource(R.string.connection_title),
         action = {

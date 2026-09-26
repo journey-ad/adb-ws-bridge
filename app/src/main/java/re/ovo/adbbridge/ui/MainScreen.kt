@@ -1,6 +1,5 @@
 package re.ovo.adbbridge.ui
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,9 +43,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import re.ovo.adbbridge.R
 import re.ovo.adbbridge.bridge.BridgeStatus
 import re.ovo.adbbridge.data.AppPrefs
+import re.ovo.adbbridge.perf.PerfTrace
+import re.ovo.adbbridge.perf.TraceComposition
 import re.ovo.adbbridge.ui.theme.AdbBridgeTheme
 import re.ovo.adbbridge.util.withAppLanguage
 
@@ -57,14 +60,27 @@ fun AppContent() {
     val base = LocalContext.current
     val context = remember(base, language) { base.withAppLanguage(language) }
     var screen by remember { mutableStateOf(Screen.BRIDGE) }
+    // 切换窗口包含过渡动画与目标页首次组合，结束时输出期间的帧与区段增量
+    LaunchedEffect(screen) {
+        delay(SWITCH_WINDOW_MS)
+        PerfTrace.endWindow()
+    }
     CompositionLocalProvider(LocalContext provides context) {
         AdbBridgeTheme {
             Surface(modifier = Modifier.fillMaxSize()) {
-                MainScreen(screen = screen, onScreenChange = { screen = it })
+                MainScreen(
+                    screen = screen,
+                    onScreenChange = { target ->
+                        PerfTrace.beginWindow("switch.$target")
+                        screen = target
+                    },
+                )
             }
         }
     }
 }
+
+private const val SWITCH_WINDOW_MS = 500L
 
 @Composable
 private fun screenTitle(screen: Screen): String = when (screen) {
@@ -90,9 +106,12 @@ fun MainScreen(
 ) {
     val running by BridgeStatus.running.collectAsState()
     val paired by BridgeStatus.paired.collectAsState()
-    val connection by BridgeStatus.connection.collectAsState()
-    val status = appStatus(running = running, paired = paired, connected = connection != null)
+    // 连接快照每秒刷新，这里只取是否连接，界面树不跟随每秒刷新重组
+    val connected by BridgeStatus.connected.collectAsState()
+    val status = appStatus(running = running, paired = paired, connected = connected)
     val pendingAuth by BridgeStatus.pendingAuth.collectAsState()
+
+    TraceComposition("compose.MainScreen")
 
     val lifecycle = LocalLifecycleOwner.current
     DisposableEffect(lifecycle) {
@@ -118,20 +137,18 @@ fun MainScreen(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .imePadding(),
+                .imePadding()
+                .clipToBounds(),
         ) {
-            AnimatedContent(
-                targetState = screen,
-                transitionSpec = { slideFade() },
-                modifier = Modifier.fillMaxSize().clipToBounds(),
-                label = "screen",
-            ) { target ->
-                when (target) {
-                    Screen.BRIDGE -> BridgeScreen(viewModel)
-                    Screen.LOG -> LogScreen(viewModel, onOpenHistory = { onScreenChange(Screen.HISTORY) })
-                    Screen.SETTINGS -> SettingsScreen(viewModel)
-                    Screen.HISTORY -> HistoryScreen(viewModel, onBack = { onScreenChange(Screen.LOG) })
-                }
+            // 同一时刻只有当前界面在组合里，切换即整页替换
+            when (screen) {
+                Screen.BRIDGE -> BridgeScreen(viewModel)
+                Screen.LOG -> LogScreen(
+                    viewModel,
+                    onOpenHistory = { onScreenChange(Screen.HISTORY) },
+                )
+                Screen.SETTINGS -> SettingsScreen(viewModel)
+                Screen.HISTORY -> HistoryScreen(viewModel, onBack = { onScreenChange(Screen.LOG) })
             }
         }
         ScreenBar(
@@ -187,21 +204,9 @@ private fun TopBar(title: String, status: AppStatus) {
         modifier = Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AnimatedContent(
-            targetState = title,
-            transitionSpec = { crossFade() },
-            label = "topBarTitle",
-        ) { value ->
-            Text(text = value, style = MaterialTheme.typography.titleMedium)
-        }
+        Text(text = title, style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.weight(1f))
-        AnimatedContent(
-            targetState = status,
-            transitionSpec = { crossFade() },
-            label = "topBarStatus",
-        ) { value ->
-            StatusChip(text = value.text, color = value.color)
-        }
+        StatusChip(text = status.text, color = status.color)
     }
 }
 

@@ -110,7 +110,8 @@
     <string name="log_toggle_autoscroll_desc">Scrolls to the newest entry when logs arrive</string>
     <string name="log_session_app">In-app</string>
     <string name="log_session_from">From %1$s</string>
-    <string name="log_session_summary">%1$s · %2$d entries · %3$s</string>
+    <string name="log_session_summary">%1$s · %2$d entries · duration %3$s</string>
+    <string name="log_session_summary_short">%1$s · %2$d entries</string>
 
     <!-- 历史会话页 -->
     <string name="history_count">%1$d sessions, swipe an entry to delete</string>
