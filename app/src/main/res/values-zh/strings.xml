@@ -30,6 +30,7 @@
     <string name="label_client">客户端</string>
     <string name="label_duration">连接时长</string>
     <string name="label_throughput">数据吞吐</string>
+    <string name="label_speed">连接速度</string>
     <string name="metric_up_rate">上行速率</string>
     <string name="metric_down_rate">下行速率</string>
     <string name="pairing_title">设备无线调试</string>
@@ -124,6 +125,11 @@
     <string name="history_delete_title">删除会话日志</string>
     <string name="history_delete_message">%1$s 的日志会删除，删除后无法恢复</string>
     <string name="history_delete_desc">删除会话日志</string>
+
+    <!-- 桌面小组件 -->
+    <string name="widget_description">显示连接地址，一键启停转发</string>
+    <string name="widget_waiting">等待连接</string>
+    <string name="widget_port_in_use">端口被占用</string>
 
     <!-- 转发服务通知 -->
     <string name="channel_bridge">ADB 桥</string>

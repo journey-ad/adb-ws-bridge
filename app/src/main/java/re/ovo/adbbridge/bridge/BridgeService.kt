@@ -113,7 +113,9 @@ class BridgeService : Service() {
             verifyPassword = { AppPrefs.verify(it) },
             authorize = { remote -> requestAuth(remote) },
             onSessionChanged = { snapshot ->
+                val wasConnected = BridgeStatus.connected.value
                 BridgeStatus.setConnection(snapshot)
+                BridgeController.refreshSurfaces(this, force = wasConnected != (snapshot != null))
                 updateNotification(snapshot)
             },
             onLog = { sessionId, category, message ->
@@ -122,6 +124,7 @@ class BridgeService : Service() {
         )
         server?.start()
         BridgeStatus.running.value = true
+        BridgeController.refreshSurfaces(this)
         LogRepository.append(null, LogCategory.ACTION, appString(R.string.log_bridge_started))
         // 切换语言后刷新通知
         scope.launch {
@@ -215,6 +218,7 @@ class BridgeService : Service() {
         server = null
         BridgeStatus.running.value = false
         BridgeStatus.setConnection(null)
+        BridgeController.refreshSurfaces(this)
         if (::pairing.isInitialized) {
             pairing.stopDiscovery()
         }

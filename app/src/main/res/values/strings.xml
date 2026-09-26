@@ -31,6 +31,7 @@
     <string name="label_client">Client</string>
     <string name="label_duration">Duration</string>
     <string name="label_throughput">Transfer</string>
+    <string name="label_speed">Speed</string>
     <string name="metric_up_rate">Upload rate</string>
     <string name="metric_down_rate">Download rate</string>
     <string name="pairing_title">Wireless debugging</string>
@@ -125,6 +126,11 @@
     <string name="history_delete_title">Delete session logs</string>
     <string name="history_delete_message">Logs of %1$s are deleted and cannot be recovered</string>
     <string name="history_delete_desc">Delete session logs</string>
+
+    <!-- 桌面小组件 -->
+    <string name="widget_description">Show the connection address, start or stop forwarding</string>
+    <string name="widget_waiting">Waiting</string>
+    <string name="widget_port_in_use">Port in use</string>
 
     <!-- 转发服务通知 -->
     <string name="channel_bridge">ADB Bridge</string>

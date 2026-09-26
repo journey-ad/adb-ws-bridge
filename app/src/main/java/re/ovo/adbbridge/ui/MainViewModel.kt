@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import re.ovo.adbbridge.R
+import re.ovo.adbbridge.bridge.BridgeController
 import re.ovo.adbbridge.bridge.BridgeService
 import re.ovo.adbbridge.bridge.BridgeStatus
 import re.ovo.adbbridge.data.AppPrefs
@@ -125,6 +126,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setWsPort(value: Int) {
         AppPrefs.setWsPort(value)
+        BridgeController.refreshSurfaces(getApplication())
         logAction(text(R.string.log_port_changed, value))
         if (!BridgeStatus.running.value) return
         stopBridge()

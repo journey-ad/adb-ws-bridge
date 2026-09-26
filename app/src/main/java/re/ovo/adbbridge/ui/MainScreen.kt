@@ -45,6 +45,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import re.ovo.adbbridge.R
+import re.ovo.adbbridge.bridge.BridgeController
 import re.ovo.adbbridge.bridge.BridgeStatus
 import re.ovo.adbbridge.data.AppPrefs
 import re.ovo.adbbridge.perf.PerfTrace
@@ -64,6 +65,10 @@ fun AppContent() {
     LaunchedEffect(screen) {
         delay(SWITCH_WINDOW_MS)
         PerfTrace.endWindow()
+    }
+    // 进入应用与切换语言后刷新磁贴与小组件文案
+    LaunchedEffect(language) {
+        BridgeController.refreshSurfaces(base.applicationContext)
     }
     CompositionLocalProvider(LocalContext provides context) {
         AdbBridgeTheme {
