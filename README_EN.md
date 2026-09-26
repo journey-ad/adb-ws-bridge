@@ -12,6 +12,14 @@ ADB Bridge is an ADB forwarding tool that runs on the Android device itself. Aft
   </a>
 </p>
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/bridge-en.webp" width="240">
+  <img src="docs/screenshots/logs-en.webp" width="240">
+  <img src="docs/screenshots/settings-en.webp" width="240">
+</p>
+
 ## How it works
 
 The app first pairs with the device's own wireless debugging: mDNS discovers the port of the `_adb-tls-pairing._tcp` service, and entering the 6-digit pairing code from the system into the notification completes the handshake. The generated RSA key stays on the device and remains valid afterwards.

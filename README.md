@@ -12,6 +12,14 @@ ADB Bridge 是一款在 Android 设备上运行的 ADB 转发工具。它与本�
   </a>
 </p>
 
+## 界面
+
+<p align="center">
+  <img src="docs/screenshots/bridge-zh.webp" width="240">
+  <img src="docs/screenshots/logs-zh.webp" width="240">
+  <img src="docs/screenshots/settings-zh.webp" width="240">
+</p>
+
 ## 工作方式
 
 应用先与设备自身的无线调试完成配对：mDNS 发现 `_adb-tls-pairing._tcp` 服务的端口，在通知里填入系统给出的 6 位配对码即可完成握手，生成的 RSA 密钥保存在本机，之后长期可用。
