@@ -30,7 +30,7 @@ import re.ovo.adbbridge.perf.PerfTrace
 import re.ovo.adbbridge.pairing.PairingManager
 import re.ovo.adbbridge.pairing.PairingService
 import re.ovo.adbbridge.util.appString
-import re.ovo.adbbridge.util.getLanAddress
+import re.ovo.adbbridge.util.getLanAddresses
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -41,7 +41,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         .map { it != null }
         .stateIn(viewModelScope, SharingStarted.Eagerly, AppPrefs.passwordEnabled)
 
-    val lanAddress = MutableStateFlow(getLanAddress())
+    val lanAddresses = MutableStateFlow(getLanAddresses())
 
     val versionName: String = versionOf(application)
 
@@ -96,9 +96,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (BridgeStatus.running.value) return
         viewModelScope.launch(Dispatchers.IO) {
             if (!pairing.verifyPaired()) return@launch
-            val address = getLanAddress()
+            val addresses = getLanAddresses()
             withContext(Dispatchers.Main) {
-                lanAddress.value = address
+                lanAddresses.value = addresses
                 pairing.discoverConnectPort()
                 val intent = Intent(getApplication(), BridgeService::class.java)
                 getApplication<Application>().startForegroundService(intent)

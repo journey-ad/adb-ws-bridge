@@ -28,7 +28,7 @@ import re.ovo.adbbridge.pairing.PairingManager
 import re.ovo.adbbridge.util.appString
 import re.ovo.adbbridge.util.formatBytes
 import re.ovo.adbbridge.util.formatDuration
-import re.ovo.adbbridge.util.getLanAddress
+import re.ovo.adbbridge.util.getLanAddresses
 
 class BridgeService : Service() {
 
@@ -224,8 +224,9 @@ class BridgeService : Service() {
                 NotificationChannel(CHANNEL_ID, appString(R.string.channel_bridge), NotificationManager.IMPORTANCE_LOW)
             )
         }
-        val address = "ws://${getLanAddress() ?: "127.0.0.1"}:${AppPrefs.wsPort.value}"
-        val lines = mutableListOf(appString(R.string.notify_address_line, address))
+        val port = AppPrefs.wsPort.value
+        val lines = getLanAddresses().ifEmpty { listOf("127.0.0.1") }
+            .mapTo(mutableListOf()) { appString(R.string.notify_address_line, "ws://$it:$port") }
         val summary = if (snapshot == null) {
             lines += appString(R.string.notify_waiting)
             appString(R.string.notify_waiting)

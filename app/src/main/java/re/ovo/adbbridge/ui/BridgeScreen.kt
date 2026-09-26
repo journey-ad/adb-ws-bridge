@@ -78,10 +78,10 @@ fun BridgeScreen(viewModel: MainViewModel) {
     val connected by BridgeStatus.connected.collectAsState()
     val pairingPort by BridgeStatus.pairingPort.collectAsState()
     val password by AppPrefs.password.collectAsState()
-    val address by viewModel.lanAddress.collectAsState()
+    val addresses by viewModel.lanAddresses.collectAsState()
     val wsPort by AppPrefs.wsPort.collectAsState()
     val trusted by AppPrefs.trustedClients.collectAsState()
-    val url = "ws://${address ?: "127.0.0.1"}:$wsPort/adb"
+    val urls = addresses.ifEmpty { listOf("127.0.0.1") }.map { "ws://$it:$wsPort/adb" }
     val passwordQuery = password?.let { "?password=${urlEncode(it)}" }.orEmpty()
 
     LazyColumn(
@@ -103,8 +103,8 @@ fun BridgeScreen(viewModel: MainViewModel) {
             item(key = "address") {
                 Box(modifier = itemAnimation()) {
                     AddressCard(
-                        url = url,
-                        onCopy = { copyText(context, url + passwordQuery) },
+                        urls = urls,
+                        onCopy = { copyText(context, it + passwordQuery) },
                     )
                 }
             }
@@ -210,21 +210,24 @@ private fun ForwardCard(
 
 @Composable
 private fun AddressCard(
-    url: String,
+    urls: List<String>,
     onCopy: (String) -> Unit,
 ) {
     SectionCard(title = stringResource(R.string.address_title)) {
-        InfoRow(
-            label = stringResource(R.string.label_address),
-            value = url,
-            action = {
-                SmallActionButton(
-                    text = stringResource(R.string.action_copy),
-                    icon = Icons.Outlined.ContentCopy,
-                    onClick = { onCopy(url) },
-                )
-            },
-        )
+        // 多张网卡逐个列出，只有首个地址带标签
+        urls.forEachIndexed { index, url ->
+            InfoRow(
+                label = if (index == 0) stringResource(R.string.label_address) else "",
+                value = url,
+                action = {
+                    SmallActionButton(
+                        text = stringResource(R.string.action_copy),
+                        icon = Icons.Outlined.ContentCopy,
+                        onClick = { onCopy(url) },
+                    )
+                },
+            )
+        }
     }
 }
 
