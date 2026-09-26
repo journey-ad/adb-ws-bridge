@@ -154,8 +154,8 @@ fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
             label = "logBody",
         ) { state ->
             when (state) {
-                LogBody.DISABLED -> EmptyLog(message = "日志已关闭，打开「日志」开关后开始记录")
-                LogBody.IDLE -> EmptyLog(message = "转发服务未启用，启动后在这里显示本次会话日志")
+                LogBody.DISABLED -> EmptyLog(message = "日志已关闭，打开日志开关后开始记录")
+                LogBody.IDLE -> EmptyLog(message = "转发服务未启用，启动后在这里展示本次会话日志")
                 LogBody.LIST -> LogList(
                     entries = entries,
                     listState = listState,
@@ -169,7 +169,7 @@ fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
         AlertDialog(
             onDismissRequest = { clearing = false },
             title = { Text(text = "清空当前会话") },
-            text = { Text(text = "只删除当前会话的日志，删除后无法恢复") },
+            text = { Text(text = "是否要删除当前会话日志，删除后无法恢复") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.clearLogSession()
@@ -191,15 +191,15 @@ fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
             text = {
                 Column {
                     ToggleRow(
-                        label = "日志",
-                        description = "关闭后不再展示，也不再记录日志",
+                        label = "日志开关",
+                        description = "关闭后将不再展示和记录日志",
                         checked = logOn,
                         onCheckedChange = { AppPrefs.setLogEnabled(it) },
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     ToggleRow(
                         label = "记录日志",
-                        description = "关闭后只在当前使用中保留，不写入存储",
+                        description = "关闭后仅展示本次会话日志，不写入存储",
                         checked = persisting,
                         onCheckedChange = { AppPrefs.setLogPersist(it) },
                     )

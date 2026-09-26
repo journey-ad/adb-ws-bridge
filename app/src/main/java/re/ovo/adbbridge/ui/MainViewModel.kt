@@ -9,6 +9,7 @@ import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -31,8 +32,9 @@ import re.ovo.adbbridge.util.getLanAddress
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val pairing = PairingManager(application)
+    private var pairingCheck: Job? = null
 
-    val passwordEnabled: StateFlow<Boolean> = AppPrefs.passwordHash
+    val passwordEnabled: StateFlow<Boolean> = AppPrefs.password
         .map { it != null }
         .stateIn(viewModelScope, SharingStarted.Eagerly, AppPrefs.passwordEnabled)
 
@@ -56,7 +58,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         BridgeStatus.paired.value = pairing.isPaired
+        refreshPaired()
         LogRepository.select(LogRepository.sessions.value.firstOrNull()?.id ?: LogRepository.APP_SESSION)
+    }
+
+    /** 系统里撤销无线调试授权后应用无从得知，回到前台或启动转发前重新确认一次 */
+    fun refreshPaired() {
+        if (!pairing.isPaired) return
+        pairingCheck?.cancel()
+        pairingCheck = viewModelScope.launch(Dispatchers.IO) { pairing.verifyPaired() }
     }
 
     /** 启动时同时打开开发者选项并高亮无线调试开关，与 Shizuku 的引导一致 */
@@ -74,21 +84,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         runCatching { getApplication<Application>().startActivity(intent) }
     }
 
-    fun pair(code: String) {
-        val port = BridgeStatus.pairingPort.value
-        if (port <= 0 || code.isBlank()) {
-            BridgeStatus.log("请先填入配对码并确认已发现配对端口")
-            return
-        }
-        viewModelScope.launch(Dispatchers.IO) {
-            pairing.pair(port, code)
-            pairing.stopDiscovery()
-        }
-    }
-
     fun startBridge() {
         if (BridgeStatus.running.value) return
         viewModelScope.launch(Dispatchers.IO) {
+            if (!pairing.verifyPaired()) return@launch
             val address = getLanAddress()
             withContext(Dispatchers.Main) {
                 lanAddress.value = address

@@ -25,6 +25,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,12 +34,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import re.ovo.adbbridge.bridge.BridgeStatus
 import re.ovo.adbbridge.ui.theme.AdbBridgeTheme
 
 private enum class Screen(val title: String, val label: String) {
-    BRIDGE("ADB 桥", "转发"),
+    BRIDGE("ADB Bridge", "转发"),
     LOG("日志", "日志"),
     SETTINGS("设置", "设置"),
     HISTORY("历史会话", "日志"),
@@ -60,6 +64,15 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     val connection by BridgeStatus.connection.collectAsState()
     val status = appStatus(running = running, paired = paired, connected = connection != null)
     var screen by remember { mutableStateOf(Screen.BRIDGE) }
+
+    val lifecycle = LocalLifecycleOwner.current
+    DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshPaired()
+        }
+        lifecycle.lifecycle.addObserver(observer)
+        onDispose { lifecycle.lifecycle.removeObserver(observer) }
+    }
 
     Column(
         modifier = Modifier

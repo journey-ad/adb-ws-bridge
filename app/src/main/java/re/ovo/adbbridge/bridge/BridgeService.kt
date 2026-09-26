@@ -15,6 +15,8 @@ import re.ovo.adbbridge.data.AppPrefs
 import re.ovo.adbbridge.data.LogCategory
 import re.ovo.adbbridge.data.LogRepository
 import re.ovo.adbbridge.pairing.PairingManager
+import re.ovo.adbbridge.util.formatBytes
+import re.ovo.adbbridge.util.formatDuration
 import re.ovo.adbbridge.util.getLanAddress
 
 class BridgeService : Service() {
@@ -104,6 +106,7 @@ class BridgeService : Service() {
         stopSelf()
     }
 
+    /** 通知的展开样式可以放多行，收起时只显示标题与一行摘要 */
     private fun buildNotification(snapshot: ConnectionSnapshot?): Notification {
         val manager = getSystemService(NotificationManager::class.java)
         if (manager.getNotificationChannel(CHANNEL_ID) == null) {
@@ -112,14 +115,37 @@ class BridgeService : Service() {
             )
         }
         val address = "ws://${getLanAddress() ?: "127.0.0.1"}:${AppPrefs.wsPort.value}"
-        val state = if (snapshot == null) "等待连接" else "已连接 ${snapshot.remote}"
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val lines = mutableListOf("连接地址 $address")
+        val summary = if (snapshot == null) {
+            lines += "等待连接"
+            "等待连接"
+        } else {
+            lines += "已连接客户端 ${snapshot.remote}"
+            lines += "连接时长 ${formatDuration(snapshot.durationMs)}"
+            lines += "↑ ${formatBytes(snapshot.upBytes)}   ↓ ${formatBytes(snapshot.downBytes)}"
+            "已连接 ${snapshot.remote} · ${formatDuration(snapshot.durationMs)}"
+        }
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.sym_def_app_icon)
             .setContentTitle("转发服务运行中")
-            .setContentText("$address · $state")
-            .setSmallIcon(android.R.drawable.stat_sys_data_bluetooth)
+            .setContentText(summary)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(lines.joinToString("\n")))
             .setContentIntent(openAppIntent())
             .setOngoing(true)
-            .build()
+        if (snapshot != null) {
+            builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "断开连接", disconnectIntent())
+        }
+        return builder.build()
+    }
+
+    private fun disconnectIntent(): PendingIntent {
+        val intent = Intent(this, BridgeService::class.java).setAction(ACTION_DISCONNECT)
+        return PendingIntent.getService(
+            this,
+            DISCONNECT_REQUEST_CODE,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
     }
 
     private fun openAppIntent(): PendingIntent {
@@ -144,5 +170,6 @@ class BridgeService : Service() {
         private const val TUNNEL_HOST = "127.0.0.1"
         private const val CHANNEL_ID = "bridge"
         private const val NOTIFICATION_ID = 1
+        private const val DISCONNECT_REQUEST_CODE = 2
     }
 }

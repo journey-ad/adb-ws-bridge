@@ -119,7 +119,7 @@ class PairingService : Service() {
             NOTIFICATION_ID,
             builder()
                 .setContentTitle("已找到配对服务")
-                .setContentText("端口 $port，点击后在通知里输入 6 位配对码")
+                .setContentText("端口 $port，点击通知按钮输入 6 位配对码")
                 .addAction(action)
                 .build(),
         )
@@ -133,7 +133,7 @@ class PairingService : Service() {
             )
         }
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_sys_data_bluetooth)
+            .setSmallIcon(android.R.drawable.sym_def_app_icon)
             .setOngoing(ongoing)
             .setContentIntent(openAppIntent())
     }

@@ -22,11 +22,15 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,6 +48,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -226,25 +231,48 @@ fun MetricGrid(items: List<Pair<String, String>>) {
 }
 
 @Composable
-fun PasswordDialog(title: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
+fun PasswordDialog(
+    passwordEnabled: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+    onClear: () -> Unit,
+) {
     var value by remember { mutableStateOf("") }
+    var visible by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = title, style = MaterialTheme.typography.titleMedium) },
+        title = {
+            Text(
+                text = if (passwordEnabled) "修改连接密码" else "设置连接密码",
+                style = MaterialTheme.typography.titleMedium,
+            )
+        },
         text = {
             Column {
                 OutlinedTextField(
                     value = value,
-                    onValueChange = { value = it },
+                    onValueChange = { value = sanitizePassword(it) },
                     label = { Text(text = "新密码") },
                     singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = if (visible) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = { visible = !visible }) {
+                            Icon(
+                                imageVector = if (visible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                contentDescription = if (visible) "隐藏密码" else "显示密码",
+                            )
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "密码只保存在本机，浏览器连接时校验",
+                    text = "密码只保存在本机，浏览器连接时校验；可用字母、数字和 -_.@#*& 等常见符号",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -259,9 +287,22 @@ fun PasswordDialog(title: String, onDismiss: () -> Unit, onConfirm: (String) -> 
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = "取消")
+            Row {
+                if (passwordEnabled) {
+                    TextButton(onClick = onClear) {
+                        Text(text = "清除密码", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(text = "取消")
+                }
             }
         },
     )
 }
+
+/** 密码只允许字母数字与常用符号，避免 URL 查询参数里出现歧义字符 */
+private val PASSWORD_ALLOWED = Regex("[A-Za-z0-9_.@\\-#*&]+")
+
+private fun sanitizePassword(value: String): String =
+    value.split("").filter { PASSWORD_ALLOWED.matches(it) }.joinToString("")

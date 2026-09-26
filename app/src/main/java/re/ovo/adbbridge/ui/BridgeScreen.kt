@@ -32,7 +32,6 @@ import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -53,6 +52,7 @@ import re.ovo.adbbridge.ui.theme.LocalStatusColors
 import re.ovo.adbbridge.util.formatBytes
 import re.ovo.adbbridge.util.formatDuration
 import re.ovo.adbbridge.util.formatRate
+import java.net.URLEncoder
 
 data class AppStatus(val text: String, val color: Color)
 
@@ -62,7 +62,7 @@ fun appStatus(running: Boolean, paired: Boolean, connected: Boolean): AppStatus 
     return when {
         !paired -> AppStatus("未配对", status.warning)
         connected -> AppStatus("已连接", status.online)
-        running -> AppStatus("等待连接", status.offline)
+        running -> AppStatus("连接中", status.offline)
         else -> AppStatus("已停止", status.offline)
     }
 }
@@ -75,11 +75,12 @@ fun BridgeScreen(viewModel: MainViewModel) {
     val connection by BridgeStatus.connection.collectAsState()
     val pairingPort by BridgeStatus.pairingPort.collectAsState()
     val passwordEnabled by viewModel.passwordEnabled.collectAsState()
+    val password by AppPrefs.password.collectAsState()
     val address by viewModel.lanAddress.collectAsState()
     val wsPort by AppPrefs.wsPort.collectAsState()
     val url = "ws://${address ?: "127.0.0.1"}:$wsPort/adb"
+    val urlToCopy = password?.let { "$url?password=${urlEncode(it)}" } ?: url
     val port = "$wsPort"
-    var code by remember { mutableStateOf("") }
     var passwordDialog by remember { mutableStateOf(false) }
     var portDialog by remember { mutableStateOf(false) }
 
@@ -105,7 +106,7 @@ fun BridgeScreen(viewModel: MainViewModel) {
                         url = url,
                         port = port,
                         passwordEnabled = passwordEnabled,
-                        onCopy = { value -> copyText(context, value) },
+                        onCopy = { copyText(context, urlToCopy) },
                         onChangePassword = { passwordDialog = true },
                         onChangePort = { portDialog = true },
                     )
@@ -127,10 +128,7 @@ fun BridgeScreen(viewModel: MainViewModel) {
                 PairingCard(
                     paired = paired,
                     port = pairingPort,
-                    code = code,
-                    onCodeChange = { code = it },
-                    onPair = { viewModel.pair(code) },
-                    onGuidePairing = { viewModel.openDeveloperOptions() },
+                    onGuidePairing = { viewModel.startPairing() },
                 )
             }
         }
@@ -149,10 +147,14 @@ fun BridgeScreen(viewModel: MainViewModel) {
 
     if (passwordDialog) {
         PasswordDialog(
-            title = if (passwordEnabled) "修改连接密码" else "设置连接密码",
+            passwordEnabled = passwordEnabled,
             onDismiss = { passwordDialog = false },
             onConfirm = { value ->
                 viewModel.setPassword(value)
+                passwordDialog = false
+            },
+            onClear = {
+                viewModel.clearPassword()
                 passwordDialog = false
             },
         )
@@ -295,9 +297,6 @@ private fun ConnectionCard(connection: ConnectionSnapshot, onDisconnect: () -> U
 private fun PairingCard(
     paired: Boolean,
     port: Int,
-    code: String,
-    onCodeChange: (String) -> Unit,
-    onPair: () -> Unit,
     onGuidePairing: () -> Unit,
 ) {
     SectionCard(
@@ -308,29 +307,17 @@ private fun PairingCard(
     ) {
         if (paired) {
             Text(
-                text = "已与本机无线调试完成配对，配对凭证只保存在本机",
+                text = "已与本机无线调试完成配对",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             return@SectionCard
         }
         Text(
-            text = "点「前往配对」打开无线调试，再点「使用配对码配对设备」，把系统显示的配对码填到这里",
+            text = "配对操作说明\n1. 点击「前往配对」打开无线调试开关\n2. 点击「使用配对码配对设备」\n3. 然后下拉通知填写配对码",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = code,
-                onValueChange = onCodeChange,
-                label = { Text(text = "配对码") },
-                singleLine = true,
-                modifier = Modifier.weight(1f).height(56.dp),
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            SmallActionButton(text = "配对", icon = Icons.Outlined.Wifi, onClick = onPair)
-        }
         if (port > 0) {
             Spacer(modifier = Modifier.height(6.dp))
             Text(
@@ -344,9 +331,9 @@ private fun PairingCard(
 
 private fun forwardSummary(running: Boolean, paired: Boolean): String {
     return when {
-        running -> "同一网络的浏览器可连接到下面的地址"
-        !paired -> "先完成设备无线调试配对"
-        else -> "启动后同一网络的浏览器即可连接"
+        running -> "同一网络的设备可连接到下面的地址"
+        !paired -> "请先完成设备无线调试配对"
+        else -> "启动后同一网络的设备即可连接"
     }
 }
 
@@ -355,3 +342,5 @@ private fun copyText(context: Context, text: String) {
     manager.setPrimaryClip(ClipData.newPlainText("adb-bridge", text))
     Toast.makeText(context, "已复制", Toast.LENGTH_SHORT).show()
 }
+
+private fun urlEncode(value: String): String = URLEncoder.encode(value, Charsets.UTF_8.name())
