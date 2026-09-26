@@ -25,7 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.LinkOff
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.PowerSettingsNew
@@ -39,9 +38,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -81,16 +77,12 @@ fun BridgeScreen(viewModel: MainViewModel) {
     // 快照每秒更新，只把是否连接留在这一层，具体数值由连接卡片自己收集
     val connected by BridgeStatus.connected.collectAsState()
     val pairingPort by BridgeStatus.pairingPort.collectAsState()
-    val passwordEnabled by viewModel.passwordEnabled.collectAsState()
     val password by AppPrefs.password.collectAsState()
     val address by viewModel.lanAddress.collectAsState()
     val wsPort by AppPrefs.wsPort.collectAsState()
     val trusted by AppPrefs.trustedClients.collectAsState()
     val url = "ws://${address ?: "127.0.0.1"}:$wsPort/adb"
-    val urlToCopy = password?.let { "$url?password=${urlEncode(it)}" } ?: url
-    val port = "$wsPort"
-    var passwordDialog by remember { mutableStateOf(false) }
-    var portDialog by remember { mutableStateOf(false) }
+    val passwordQuery = password?.let { "?password=${urlEncode(it)}" }.orEmpty()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -112,11 +104,7 @@ fun BridgeScreen(viewModel: MainViewModel) {
                 Box(modifier = itemAnimation()) {
                     AddressCard(
                         url = url,
-                        port = port,
-                        passwordEnabled = passwordEnabled,
-                        onCopy = { copyText(context, urlToCopy) },
-                        onChangePassword = { passwordDialog = true },
-                        onChangePort = { portDialog = true },
+                        onCopy = { copyText(context, url + passwordQuery) },
                     )
                 }
             }
@@ -145,32 +133,6 @@ fun BridgeScreen(viewModel: MainViewModel) {
                 )
             }
         }
-    }
-
-    if (portDialog) {
-        PortDialog(
-            current = wsPort,
-            onDismiss = { portDialog = false },
-            onConfirm = { value ->
-                viewModel.setWsPort(value)
-                portDialog = false
-            },
-        )
-    }
-
-    if (passwordDialog) {
-        PasswordDialog(
-            passwordEnabled = passwordEnabled,
-            onDismiss = { passwordDialog = false },
-            onConfirm = { value ->
-                viewModel.setPassword(value)
-                passwordDialog = false
-            },
-            onClear = {
-                viewModel.clearPassword()
-                passwordDialog = false
-            },
-        )
     }
 }
 
@@ -249,11 +211,7 @@ private fun ForwardCard(
 @Composable
 private fun AddressCard(
     url: String,
-    port: String,
-    passwordEnabled: Boolean,
     onCopy: (String) -> Unit,
-    onChangePassword: () -> Unit,
-    onChangePort: () -> Unit,
 ) {
     SectionCard(title = stringResource(R.string.address_title)) {
         InfoRow(
@@ -264,32 +222,6 @@ private fun AddressCard(
                     text = stringResource(R.string.action_copy),
                     icon = Icons.Outlined.ContentCopy,
                     onClick = { onCopy(url) },
-                )
-            },
-        )
-        InfoRow(
-            label = stringResource(R.string.label_port),
-            value = port,
-            action = {
-                SmallActionButton(
-                    text = stringResource(R.string.action_edit),
-                    icon = Icons.Outlined.Edit,
-                    onClick = onChangePort,
-                )
-            },
-        )
-        InfoRow(
-            label = stringResource(R.string.label_auth),
-            value = if (passwordEnabled) {
-                stringResource(R.string.auth_required)
-            } else {
-                stringResource(R.string.auth_none)
-            },
-            action = {
-                SmallActionButton(
-                    text = stringResource(R.string.action_edit),
-                    icon = Icons.Outlined.Edit,
-                    onClick = onChangePassword,
                 )
             },
         )

@@ -55,6 +55,7 @@
     <string name="toast_copied">Copied</string>
 
     <!-- 设置页 -->
+    <string name="settings_connection">Connection</string>
     <string name="settings_appearance">Appearance</string>
     <string name="theme_system">System</string>
     <string name="theme_light">Light</string>

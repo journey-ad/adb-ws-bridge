@@ -54,6 +54,7 @@
     <string name="toast_copied">已复制</string>
 
     <!-- 设置页 -->
+    <string name="settings_connection">连接</string>
     <string name="settings_appearance">外观</string>
     <string name="theme_system">跟随系统</string>
     <string name="theme_light">浅色</string>

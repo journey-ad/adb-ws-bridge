@@ -15,12 +15,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -36,6 +41,9 @@ fun SettingsScreen(viewModel: MainViewModel) {
     val themeMode by AppPrefs.themeMode.collectAsState()
     val language by AppPrefs.language.collectAsState()
     val wsPort by AppPrefs.wsPort.collectAsState()
+    val passwordEnabled by viewModel.passwordEnabled.collectAsState()
+    var portDialog by remember { mutableStateOf(false) }
+    var passwordDialog by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -43,17 +51,88 @@ fun SettingsScreen(viewModel: MainViewModel) {
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
+            ConnectionCard(
+                port = "$wsPort",
+                passwordEnabled = passwordEnabled,
+                onChangePort = { portDialog = true },
+                onChangePassword = { passwordDialog = true },
+            )
+        }
+        item {
             AppearanceCard(mode = themeMode, onSelect = { AppPrefs.setThemeMode(it) })
         }
         item {
             LanguageCard(mode = language, onSelect = { AppPrefs.setLanguage(it) })
         }
         item {
-            AboutCard(version = viewModel.versionName, port = "$wsPort")
+            AboutCard(version = viewModel.versionName)
         }
         item {
             CreditsCard()
         }
+    }
+
+    if (portDialog) {
+        PortDialog(
+            current = wsPort,
+            onDismiss = { portDialog = false },
+            onConfirm = { value ->
+                viewModel.setWsPort(value)
+                portDialog = false
+            },
+        )
+    }
+
+    if (passwordDialog) {
+        PasswordDialog(
+            passwordEnabled = passwordEnabled,
+            onDismiss = { passwordDialog = false },
+            onConfirm = { value ->
+                viewModel.setPassword(value)
+                passwordDialog = false
+            },
+            onClear = {
+                viewModel.clearPassword()
+                passwordDialog = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun ConnectionCard(
+    port: String,
+    passwordEnabled: Boolean,
+    onChangePort: () -> Unit,
+    onChangePassword: () -> Unit,
+) {
+    SectionCard(title = stringResource(R.string.settings_connection)) {
+        InfoRow(
+            label = stringResource(R.string.label_port),
+            value = port,
+            action = {
+                SmallActionButton(
+                    text = stringResource(R.string.action_edit),
+                    icon = Icons.Outlined.Edit,
+                    onClick = onChangePort,
+                )
+            },
+        )
+        InfoRow(
+            label = stringResource(R.string.label_auth),
+            value = if (passwordEnabled) {
+                stringResource(R.string.auth_required)
+            } else {
+                stringResource(R.string.auth_none)
+            },
+            action = {
+                SmallActionButton(
+                    text = stringResource(R.string.action_edit),
+                    icon = Icons.Outlined.Edit,
+                    onClick = onChangePassword,
+                )
+            },
+        )
     }
 }
 
@@ -123,11 +202,10 @@ private fun LanguageOption(
 }
 
 @Composable
-private fun AboutCard(version: String, port: String) {
+private fun AboutCard(version: String) {
     val context = LocalContext.current
     SectionCard(title = stringResource(R.string.settings_about)) {
         InfoRow(label = stringResource(R.string.label_version), value = version)
-        InfoRow(label = stringResource(R.string.label_port), value = port)
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = stringResource(R.string.about_summary),
