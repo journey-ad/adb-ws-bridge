@@ -74,6 +74,9 @@
 
     <!-- 端口与密码弹窗 -->
     <string name="port_dialog_title">修改转发端口</string>
+    <string name="port_in_use_title">转发服务未能启动</string>
+    <string name="port_in_use_message">端口 %1$d 已被占用，是否修改转发端口？</string>
+    <string name="action_change_port">修改端口</string>
     <string name="port_range_hint">可用范围 1025 到 65535，运行中会重启转发服务</string>
     <string name="password_dialog_title_set">设置连接密码</string>
     <string name="password_dialog_title_change">修改连接密码</string>
@@ -160,6 +163,7 @@
     <!-- 运行日志 -->
     <string name="log_not_paired">尚未配对，先完成配对再启动转发</string>
     <string name="log_no_connect_port">未发现设备连接端口，请确认无线调试已开启</string>
+    <string name="log_port_in_use">端口 %1$d 已被占用，请修改转发端口后重试</string>
     <string name="log_bridge_started">已启动转发服务</string>
     <string name="log_bridge_stopped">已停止转发服务</string>
     <string name="log_no_connection">当前没有可断开的连接</string>

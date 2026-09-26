@@ -99,9 +99,16 @@ class BridgeService : Service() {
     }
 
     private fun startServer() {
+        val port = AppPrefs.wsPort.value
+        if (!BridgeServer.isPortFree(port)) {
+            BridgeStatus.portInUse.value = port
+            BridgeStatus.log(appString(R.string.log_port_in_use, port))
+            stop()
+            return
+        }
         server = BridgeServer(
             context = applicationContext,
-            port = AppPrefs.wsPort.value,
+            port = port,
             tunnelFactory = { AdbTunnel(TUNNEL_HOST, BridgeStatus.connectPort.value, pairing.key) },
             verifyPassword = { AppPrefs.verify(it) },
             authorize = { remote -> requestAuth(remote) },

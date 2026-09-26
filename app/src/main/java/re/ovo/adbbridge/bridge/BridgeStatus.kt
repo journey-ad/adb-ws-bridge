@@ -17,6 +17,9 @@ object BridgeStatus {
     val pendingAuth = MutableStateFlow<String?>(null)
     val appForeground = MutableStateFlow(false)
 
+    /** 端口被占用时写入该端口号，界面据此弹出提示 */
+    val portInUse = MutableStateFlow<Int?>(null)
+
     fun setConnection(snapshot: ConnectionSnapshot?) {
         connection.value = snapshot
         connected.value = snapshot != null

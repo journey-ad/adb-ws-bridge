@@ -110,6 +110,9 @@ fun MainScreen(
     val connected by BridgeStatus.connected.collectAsState()
     val status = appStatus(running = running, paired = paired, connected = connected)
     val pendingAuth by BridgeStatus.pendingAuth.collectAsState()
+    val portInUse by BridgeStatus.portInUse.collectAsState()
+    val wsPort by AppPrefs.wsPort.collectAsState()
+    var portDialog by remember { mutableStateOf(false) }
 
     TraceComposition("compose.MainScreen")
 
@@ -164,6 +167,53 @@ fun MainScreen(
             onDeny = { viewModel.decideAuth(allowed = false) },
         )
     }
+
+    portInUse?.let { port ->
+        PortInUseDialog(
+            port = port,
+            onChangePort = {
+                BridgeStatus.portInUse.value = null
+                onScreenChange(Screen.BRIDGE)
+                portDialog = true
+            },
+            onDismiss = { BridgeStatus.portInUse.value = null },
+        )
+    }
+
+    if (portDialog) {
+        PortDialog(
+            current = wsPort,
+            onDismiss = { portDialog = false },
+            onConfirm = { value ->
+                viewModel.setWsPort(value)
+                portDialog = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun PortInUseDialog(port: Int, onChangePort: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.port_in_use_title)) },
+        text = {
+            Text(
+                text = stringResource(R.string.port_in_use_message, port),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onChangePort) {
+                Text(text = stringResource(R.string.action_change_port))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.action_cancel))
+            }
+        },
+    )
 }
 
 @Composable

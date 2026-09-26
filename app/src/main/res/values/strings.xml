@@ -75,6 +75,9 @@
 
     <!-- 端口与密码弹窗 -->
     <string name="port_dialog_title">Change forwarding port</string>
+    <string name="port_in_use_title">Forwarding service not started</string>
+    <string name="port_in_use_message">Port %1$d is already in use. Change the forwarding port?</string>
+    <string name="action_change_port">Change port</string>
     <string name="port_range_hint">Range 1025 to 65535, changing it restarts the forwarding service while running</string>
     <string name="password_dialog_title_set">Set connection password</string>
     <string name="password_dialog_title_change">Change connection password</string>
@@ -161,6 +164,7 @@
     <!-- 运行日志 -->
     <string name="log_not_paired">Not paired yet, pair the device before starting forwarding</string>
     <string name="log_no_connect_port">No device connect port found, check that wireless debugging is on</string>
+    <string name="log_port_in_use">Port %1$d is already in use, change the forwarding port and try again</string>
     <string name="log_bridge_started">Forwarding service started</string>
     <string name="log_bridge_stopped">Forwarding service stopped</string>
     <string name="log_no_connection">No connection to disconnect</string>

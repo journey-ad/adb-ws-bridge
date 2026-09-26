@@ -27,6 +27,8 @@ import re.ovo.adbbridge.data.LogRepository
 import re.ovo.adbbridge.util.appString
 import java.io.ByteArrayOutputStream
 import java.io.Closeable
+import java.net.InetSocketAddress
+import java.net.ServerSocket
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
@@ -303,5 +305,10 @@ class BridgeServer(
     companion object {
         private const val SAMPLE_INTERVAL_MS = 1000L
         private const val HANDSHAKE_TIMEOUT_MS = 10_000L
+
+        /** 端口占用检测 */
+        fun isPortFree(port: Int): Boolean = runCatching {
+            ServerSocket().use { it.bind(InetSocketAddress(port)) }
+        }.isSuccess
     }
 }
