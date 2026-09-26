@@ -11,8 +11,10 @@ import moe.shizuku.manager.adb.AdbKey
 import moe.shizuku.manager.adb.AdbMdns
 import moe.shizuku.manager.adb.AdbPairingClient
 import moe.shizuku.manager.adb.PreferenceAdbKeyStore
+import re.ovo.adbbridge.R
 import re.ovo.adbbridge.bridge.AdbTunnel
 import re.ovo.adbbridge.bridge.BridgeStatus
+import re.ovo.adbbridge.util.appString
 
 class PairingManager(context: Context) {
 
@@ -48,7 +50,7 @@ class PairingManager(context: Context) {
                 false
             }
         } catch (e: Exception) {
-            BridgeStatus.log("配对校验失败：${e.message}")
+            BridgeStatus.log(appContext.appString(R.string.log_pairing_verify_failed, e.message))
             markUnpaired()
             false
         } finally {
@@ -63,14 +65,14 @@ class PairingManager(context: Context) {
             delay(DISCOVERY_INTERVAL_MS)
             BridgeStatus.connectPort.value.takeIf { it > 0 }?.let { return it }
         }
-        BridgeStatus.log("未能确认配对状态：未发现设备连接端口")
+        BridgeStatus.log(appContext.appString(R.string.log_pairing_port_unknown))
         return 0
     }
 
     fun markUnpaired() {
         preferences.edit().putBoolean(KEY_PAIRED, false).apply()
         BridgeStatus.paired.value = false
-        BridgeStatus.log("配对已失效，请重新配对")
+        BridgeStatus.log(appContext.appString(R.string.log_pairing_expired))
     }
 
     fun discoverPairingPort() {
@@ -78,11 +80,11 @@ class PairingManager(context: Context) {
         pairingMdns = AdbMdns(appContext, AdbMdns.TLS_PAIRING, Observer { port ->
             if (port > 0) {
                 BridgeStatus.pairingPort.value = port
-                BridgeStatus.log("发现配对端口 $port")
+                BridgeStatus.log(appContext.appString(R.string.log_pairing_port_found, port))
             }
         })
         pairingMdns?.start()
-        BridgeStatus.log("正在查找配对服务…")
+        BridgeStatus.log(appContext.appString(R.string.log_pairing_searching))
     }
 
     fun discoverConnectPort() {
@@ -90,7 +92,7 @@ class PairingManager(context: Context) {
         connectMdns = AdbMdns(appContext, AdbMdns.TLS_CONNECT, Observer { port ->
             if (port > 0) {
                 BridgeStatus.connectPort.value = port
-                BridgeStatus.log("发现连接端口 $port")
+                BridgeStatus.log(appContext.appString(R.string.log_connect_port_found, port))
             }
         })
         connectMdns?.start()
@@ -103,13 +105,13 @@ class PairingManager(context: Context) {
             if (ok) {
                 preferences.edit().putBoolean(KEY_PAIRED, true).apply()
                 BridgeStatus.paired.value = true
-                BridgeStatus.log("配对成功")
+                BridgeStatus.log(appContext.appString(R.string.log_pairing_success))
             } else {
-                BridgeStatus.log("配对失败")
+                BridgeStatus.log(appContext.appString(R.string.log_pairing_failed))
             }
             ok
         } catch (e: Exception) {
-            BridgeStatus.log("配对异常：${e.message}")
+            BridgeStatus.log(appContext.appString(R.string.log_pairing_error, e.message))
             false
         } finally {
             client.close()

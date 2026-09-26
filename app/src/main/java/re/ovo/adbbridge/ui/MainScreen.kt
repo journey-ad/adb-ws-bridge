@@ -24,6 +24,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -33,37 +34,62 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import re.ovo.adbbridge.R
 import re.ovo.adbbridge.bridge.BridgeStatus
+import re.ovo.adbbridge.data.AppPrefs
 import re.ovo.adbbridge.ui.theme.AdbBridgeTheme
+import re.ovo.adbbridge.util.withAppLanguage
 
-private enum class Screen(val title: String, val label: String) {
-    BRIDGE("ADB Bridge", "转发"),
-    LOG("日志", "日志"),
-    SETTINGS("设置", "设置"),
-    HISTORY("历史会话", "日志"),
-}
+enum class Screen { BRIDGE, LOG, SETTINGS, HISTORY }
 
 @Composable
 fun AppContent() {
-    AdbBridgeTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            MainScreen()
+    val language by AppPrefs.language.collectAsState()
+    val base = LocalContext.current
+    val context = remember(base, language) { base.withAppLanguage(language) }
+    var screen by remember { mutableStateOf(Screen.BRIDGE) }
+    CompositionLocalProvider(LocalContext provides context) {
+        AdbBridgeTheme {
+            Surface(modifier = Modifier.fillMaxSize()) {
+                MainScreen(screen = screen, onScreenChange = { screen = it })
+            }
         }
     }
 }
 
 @Composable
-fun MainScreen(viewModel: MainViewModel = viewModel()) {
+private fun screenTitle(screen: Screen): String = when (screen) {
+    Screen.BRIDGE -> stringResource(R.string.screen_bridge_title)
+    Screen.LOG -> stringResource(R.string.screen_log_title)
+    Screen.SETTINGS -> stringResource(R.string.screen_settings_title)
+    Screen.HISTORY -> stringResource(R.string.screen_history_title)
+}
+
+@Composable
+private fun screenLabel(screen: Screen): String = when (screen) {
+    Screen.BRIDGE -> stringResource(R.string.screen_bridge_label)
+    Screen.LOG -> stringResource(R.string.screen_log_title)
+    Screen.SETTINGS -> stringResource(R.string.screen_settings_title)
+    Screen.HISTORY -> stringResource(R.string.screen_log_title)
+}
+
+@Composable
+fun MainScreen(
+    screen: Screen,
+    onScreenChange: (Screen) -> Unit,
+    viewModel: MainViewModel = viewModel(),
+) {
     val running by BridgeStatus.running.collectAsState()
     val paired by BridgeStatus.paired.collectAsState()
     val connection by BridgeStatus.connection.collectAsState()
     val status = appStatus(running = running, paired = paired, connected = connection != null)
-    var screen by remember { mutableStateOf(Screen.BRIDGE) }
 
     val lifecycle = LocalLifecycleOwner.current
     DisposableEffect(lifecycle) {
@@ -80,7 +106,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             .background(MaterialTheme.colorScheme.background)
             .safeDrawingPadding(),
     ) {
-        TopBar(title = screen.title, status = status)
+        TopBar(title = screenTitle(screen), status = status)
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -94,15 +120,15 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             ) { target ->
                 when (target) {
                     Screen.BRIDGE -> BridgeScreen(viewModel)
-                    Screen.LOG -> LogScreen(viewModel, onOpenHistory = { screen = Screen.HISTORY })
+                    Screen.LOG -> LogScreen(viewModel, onOpenHistory = { onScreenChange(Screen.HISTORY) })
                     Screen.SETTINGS -> SettingsScreen(viewModel)
-                    Screen.HISTORY -> HistoryScreen(viewModel, onBack = { screen = Screen.LOG })
+                    Screen.HISTORY -> HistoryScreen(viewModel, onBack = { onScreenChange(Screen.LOG) })
                 }
             }
         }
         ScreenBar(
             current = if (screen == Screen.HISTORY) Screen.LOG else screen,
-            onSelect = { screen = it },
+            onSelect = onScreenChange,
         )
     }
 }
@@ -156,7 +182,7 @@ private fun ScreenBar(current: Screen, onSelect: (Screen) -> Unit) {
                         modifier = Modifier.size(20.dp),
                     )
                 },
-                label = { Text(text = screen.label, style = MaterialTheme.typography.labelMedium) },
+                label = { Text(text = screenLabel(screen), style = MaterialTheme.typography.labelMedium) },
                 alwaysShowLabel = true,
                 modifier = Modifier.padding(vertical = 2.dp),
             )

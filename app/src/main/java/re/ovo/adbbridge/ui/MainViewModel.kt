@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import re.ovo.adbbridge.R
 import re.ovo.adbbridge.bridge.BridgeService
 import re.ovo.adbbridge.bridge.BridgeStatus
 import re.ovo.adbbridge.data.AppPrefs
@@ -27,6 +28,7 @@ import re.ovo.adbbridge.data.LogEntry
 import re.ovo.adbbridge.data.LogRepository
 import re.ovo.adbbridge.pairing.PairingManager
 import re.ovo.adbbridge.pairing.PairingService
+import re.ovo.adbbridge.util.appString
 import re.ovo.adbbridge.util.getLanAddress
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -111,7 +113,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setWsPort(value: Int) {
         AppPrefs.setWsPort(value)
-        logAction("转发端口已改为 $value")
+        logAction(text(R.string.log_port_changed, value))
         if (!BridgeStatus.running.value) return
         stopBridge()
         viewModelScope.launch {
@@ -124,12 +126,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (password.isBlank()) return
         val changed = AppPrefs.passwordEnabled
         AppPrefs.setPassword(password)
-        logAction(if (changed) "已修改连接密码" else "已开启连接密码")
+        logAction(if (changed) {
+            text(R.string.log_password_changed)
+        } else {
+            text(R.string.log_password_enabled)
+        })
     }
 
     fun clearPassword() {
         AppPrefs.clearPassword()
-        logAction("已关闭连接密码")
+        logAction(text(R.string.log_password_disabled))
     }
 
     fun selectLogSession(id: String) {
@@ -138,19 +144,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun deleteLogSession(id: String) {
         LogRepository.clear(id)
-        logAction("已删除会话日志")
+        logAction(text(R.string.log_session_deleted))
     }
 
     fun clearLogSession() {
         val id = LogRepository.selectedId.value
         LogRepository.clear(id)
-        logAction("已清空会话日志")
+        logAction(text(R.string.log_session_cleared))
     }
 
     fun clearAllLogs() {
         LogRepository.clear(null)
         LogRepository.select(LogRepository.APP_SESSION)
-        logAction("已清除全部日志")
+        logAction(text(R.string.log_all_cleared))
+    }
+
+    private fun text(resId: Int, vararg args: Any?): String {
+        return getApplication<Application>().appString(resId, *args)
     }
 
     private fun logAction(message: String) {

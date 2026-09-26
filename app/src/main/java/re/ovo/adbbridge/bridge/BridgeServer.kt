@@ -1,5 +1,6 @@
 package re.ovo.adbbridge.bridge
 
+import android.content.Context
 import android.util.Log
 import io.ktor.server.application.install
 import io.ktor.server.cio.CIO
@@ -19,8 +20,10 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import re.ovo.adbbridge.R
 import re.ovo.adbbridge.data.LogCategory
 import re.ovo.adbbridge.data.LogRepository
+import re.ovo.adbbridge.util.appString
 import java.io.ByteArrayOutputStream
 import java.io.Closeable
 import java.util.concurrent.atomic.AtomicBoolean
@@ -31,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference
  * 不解析 ADB 业务协议，仅统计流量并提取 A_OPEN 目标用于记录操作
  */
 class BridgeServer(
+    private val context: Context,
     private val port: Int,
     private val tunnelFactory: () -> AdbTunnel,
     private val verifyPassword: (String?) -> Boolean,
@@ -64,26 +68,34 @@ class BridgeServer(
                     val remote = remoteHost(ws)
                     val password = ws.call.request.queryParameters["password"]
                     if (!verifyPassword(password)) {
-                        onLog(null, LogCategory.BRIDGE, "连接密码校验失败：$remote")
-                        ws.close(CloseReason(UNAUTHORIZED_CODE, "连接密码校验失败"))
+                        onLog(null, LogCategory.BRIDGE, context.appString(R.string.log_password_rejected, remote))
+                        ws.close(CloseReason(UNAUTHORIZED_CODE, context.appString(R.string.ws_password_rejected)))
                         return@webSocket
                     }
                     if (!sessionFree.compareAndSet(true, false)) {
-                        onLog(null, LogCategory.BRIDGE, "已有连接占用，拒绝 $remote")
-                        ws.close(CloseReason(BUSY_CODE, "已有连接占用"))
+                        onLog(null, LogCategory.BRIDGE, context.appString(R.string.log_busy, remote))
+                        ws.close(CloseReason(BUSY_CODE, context.appString(R.string.ws_busy)))
                         return@webSocket
                     }
                     // 先确认浏览器完成握手，浏览器提前断开时不留下无人使用的隧道
                     val first = readFirstPacket(ws)
                     if (first == null) {
                         sessionFree.set(true)
-                        onLog(null, LogCategory.BRIDGE, "浏览器未完成握手：$remote")
+                        onLog(
+                            null,
+                            LogCategory.BRIDGE,
+                            context.appString(R.string.log_handshake_incomplete, remote),
+                        )
                         return@webSocket
                     }
                     val sessionId = LogRepository.openSession(remote)
                     val session = ConnectionSession(sessionId, remote)
                     activeJob = ws.coroutineContext[Job]
-                    onLog(sessionId, LogCategory.BRIDGE, "客户端 $remote 已连接")
+                    onLog(
+                        sessionId,
+                        LogCategory.BRIDGE,
+                        context.appString(R.string.log_client_connected, remote),
+                    )
                     var tunnel: AdbTunnel? = null
                     try {
                         val created = tunnelFactory.invoke()
@@ -146,11 +158,15 @@ class BridgeServer(
                         downstream.join()
                         sampler.cancel()
                     } catch (e: kotlinx.coroutines.CancellationException) {
-                        onLog(sessionId, LogCategory.BRIDGE, "连接被中断")
+                        onLog(sessionId, LogCategory.BRIDGE, context.appString(R.string.log_connection_interrupted))
                         throw e
                     } catch (e: Exception) {
                         Log.e(TAG, "连接异常", e)
-                        onLog(sessionId, LogCategory.BRIDGE, "连接异常：${e.message}")
+                        onLog(
+                            sessionId,
+                            LogCategory.BRIDGE,
+                            context.appString(R.string.log_connection_error, e.message),
+                        )
                     } finally {
                         val last = session.snapshot()
                         tunnel?.close()
@@ -164,7 +180,7 @@ class BridgeServer(
                 }
             }
         }.start(wait = false)
-        onLog(null, LogCategory.BRIDGE, "转发服务已启动，端口 $port")
+        onLog(null, LogCategory.BRIDGE, context.appString(R.string.log_server_started, port))
     }
 
     /** 断开当前连接，隧道与统计随连接结束一并复位 */
@@ -176,34 +192,44 @@ class BridgeServer(
     }
 
     private fun remoteHost(session: DefaultWebSocketServerSession): String {
-        return runCatching { session.call.request.local.remoteHost }.getOrDefault("未知来源")
+        return runCatching { session.call.request.local.remoteHost }
+            .getOrDefault(context.appString(R.string.log_unknown_remote))
     }
 
     private fun describeDisconnect(last: ConnectionSnapshot): String {
-        return "连接结束，上行 ${last.upBytes} 字节，下行 ${last.downBytes} 字节，时长 ${last.durationMs / 1000} 秒"
+        return context.appString(
+            R.string.log_disconnect_summary,
+            last.upBytes,
+            last.downBytes,
+            last.durationMs / 1000,
+        )
     }
 
     private fun describeSyncRequest(request: String, path: String): String {
-        return when (request) {
-            "SEND" -> "写入文件：$path"
-            "RECV" -> "读取文件：$path"
-            "LIST" -> "列出目录：$path"
-            else -> "查询文件：$path"
+        val format = when (request) {
+            "SEND" -> R.string.log_sync_send
+            "RECV" -> R.string.log_sync_recv
+            "LIST" -> R.string.log_sync_list
+            else -> R.string.log_sync_stat
         }
+        return context.appString(format, path)
     }
 
     /** 返回 null 表示这条目标不需要记录 */
     private fun describeDestination(destination: String): String? {
-        return when {
-            destination.startsWith("shell:") -> "执行命令：${destination.removePrefix("shell:")}"
-            destination.startsWith("exec:") -> "执行命令：${destination.removePrefix("exec:")}"
-            destination.startsWith("sync:") -> null
-            destination.startsWith("tcp:") -> "端口转发：${destination.removePrefix("tcp:")}"
-            destination.startsWith("localabstract:") -> "连接本地服务：${destination.removePrefix("localabstract:")}"
-            destination.startsWith("dev:") -> "读取设备文件：${destination.removePrefix("dev:")}"
-            destination.startsWith("framebuffer:") -> "读取屏幕画面"
-            else -> "打开流：$destination"
+        val (format, target) = when {
+            destination.startsWith("shell:") -> R.string.log_dest_shell to destination.removePrefix("shell:")
+            destination.startsWith("exec:") -> R.string.log_dest_shell to destination.removePrefix("exec:")
+            destination.startsWith("sync:") -> return null
+            destination.startsWith("tcp:") -> R.string.log_dest_tcp to destination.removePrefix("tcp:")
+            destination.startsWith("localabstract:") -> {
+                R.string.log_dest_localabstract to destination.removePrefix("localabstract:")
+            }
+            destination.startsWith("dev:") -> R.string.log_dest_dev to destination.removePrefix("dev:")
+            destination.startsWith("framebuffer:") -> return context.appString(R.string.log_dest_framebuffer)
+            else -> R.string.log_dest_stream to destination
         }
+        return context.appString(format, target)
     }
 
     /**
@@ -225,7 +251,7 @@ class BridgeServer(
         }
         Log.i(TAG, "设备横幅：${String(tunnel.bannerPacket.copyOfRange(24, tunnel.bannerPacket.size))}")
         session.send(Frame.Binary(true, tunnel.bannerPacket))
-        onLog(sessionId, LogCategory.BRIDGE, "浏览器握手成功")
+        onLog(sessionId, LogCategory.BRIDGE, context.appString(R.string.log_handshake_ok))
     }
 
     /**
@@ -262,7 +288,7 @@ class BridgeServer(
         disconnectActive()
         server?.stop(0, 0)
         server = null
-        onLog(null, LogCategory.BRIDGE, "转发服务已停止")
+        onLog(null, LogCategory.BRIDGE, context.appString(R.string.log_server_stopped))
     }
 
     companion object {

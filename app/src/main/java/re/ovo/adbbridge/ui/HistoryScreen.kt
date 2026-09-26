@@ -42,9 +42,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import re.ovo.adbbridge.R
 import re.ovo.adbbridge.data.LogRepository
 import re.ovo.adbbridge.data.LogSession
 
@@ -66,13 +68,13 @@ fun HistoryScreen(viewModel: MainViewModel, onBack: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "共 ${sessions.size} 个会话，左滑条目可删除",
+                text = stringResource(R.string.history_count, sessions.size),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
             )
             TextButton(onClick = { clearingAll = true }) {
-                Text(text = "全部清除", style = MaterialTheme.typography.labelLarge)
+                Text(text = stringResource(R.string.action_clear_all), style = MaterialTheme.typography.labelLarge)
             }
         }
         if (sessions.isEmpty()) {
@@ -81,7 +83,7 @@ fun HistoryScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "还没有历史会话",
+                    text = stringResource(R.string.history_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -118,18 +120,20 @@ fun HistoryScreen(viewModel: MainViewModel, onBack: () -> Unit) {
     if (clearingAll) {
         AlertDialog(
             onDismissRequest = { clearingAll = false },
-            title = { Text(text = "清除全部日志") },
-            text = { Text(text = "所有会话的日志都会删除，删除后无法恢复") },
+            title = { Text(text = stringResource(R.string.history_clear_all_title)) },
+            text = { Text(text = stringResource(R.string.history_clear_all_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.clearAllLogs()
                     clearingAll = false
                 }) {
-                    Text(text = "清除")
+                    Text(text = stringResource(R.string.action_clear))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { clearingAll = false }) { Text(text = "取消") }
+                TextButton(onClick = { clearingAll = false }) {
+                    Text(text = stringResource(R.string.action_cancel))
+                }
             },
         )
     }
@@ -137,19 +141,23 @@ fun HistoryScreen(viewModel: MainViewModel, onBack: () -> Unit) {
     pendingDelete?.let { session ->
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
-            title = { Text(text = "删除会话日志") },
-            text = { Text(text = "${sessionLabel(session)} 的日志会删除，删除后无法恢复") },
+            title = { Text(text = stringResource(R.string.history_delete_title)) },
+            text = {
+                Text(text = stringResource(R.string.history_delete_message, sessionLabel(session)))
+            },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.deleteLogSession(session.id)
                     revealedId = null
                     pendingDelete = null
                 }) {
-                    Text(text = "删除")
+                    Text(text = stringResource(R.string.action_delete))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDelete = null }) { Text(text = "取消") }
+                TextButton(onClick = { pendingDelete = null }) {
+                    Text(text = stringResource(R.string.action_cancel))
+                }
             },
         )
     }
@@ -185,7 +193,7 @@ private fun SessionItem(
         ) {
             Icon(
                 imageVector = Icons.Outlined.Delete,
-                contentDescription = "删除会话日志",
+                contentDescription = stringResource(R.string.history_delete_desc),
                 tint = MaterialTheme.colorScheme.onErrorContainer,
                 modifier = Modifier.size(20.dp),
             )
@@ -254,7 +262,7 @@ private fun SessionRow(session: LogSession, selected: Boolean, modifier: Modifie
             }
             if (selected && !session.isAppSession) {
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "当前会话", style = MaterialTheme.typography.labelSmall)
+                Text(text = stringResource(R.string.log_session_current), style = MaterialTheme.typography.labelSmall)
             }
         }
     }

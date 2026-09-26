@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- 页面标题与底部标签 -->
+    <string name="screen_bridge_title">ADB Bridge</string>
+    <string name="screen_bridge_label">转发</string>
+    <string name="screen_log_title">日志</string>
+    <string name="screen_settings_title">设置</string>
+    <string name="screen_history_title">历史会话</string>
+
+    <!-- 顶部状态 -->
+    <string name="status_unpaired">未配对</string>
+    <string name="status_connected">已连接</string>
+    <string name="status_connecting">连接中</string>
+    <string name="status_stopped">已停止</string>
+
+    <!-- 转发页 -->
+    <string name="forward_running">转发服务运行中</string>
+    <string name="forward_stopped">转发服务已停止</string>
+    <string name="forward_summary_running">同一网络的设备可连接到下面的地址</string>
+    <string name="forward_summary_unpaired">请先完成设备无线调试配对</string>
+    <string name="forward_summary_idle">启动后同一网络的设备即可连接</string>
+    <string name="address_title">连接地址</string>
+    <string name="label_address">地址</string>
+    <string name="label_port">端口</string>
+    <string name="label_auth">认证</string>
+    <string name="auth_required">需要密码</string>
+    <string name="auth_none">无需密码</string>
+    <string name="connection_title">连接信息</string>
+    <string name="label_client">客户端</string>
+    <string name="label_duration">连接时长</string>
+    <string name="label_throughput">数据吞吐</string>
+    <string name="metric_up_rate">上行速率</string>
+    <string name="metric_down_rate">下行速率</string>
+    <string name="pairing_title">设备无线调试</string>
+    <string name="pairing_done">已与本机无线调试完成配对</string>
+    <string name="pairing_guide">配对操作说明\n1. 点击「前往配对」打开无线调试开关\n2. 点击「使用配对码配对设备」\n3. 然后下拉通知填写配对码</string>
+    <string name="pairing_port_found">已发现配对端口 %1$d</string>
+
+    <!-- 通用操作 -->
+    <string name="action_start">开始转发</string>
+    <string name="action_stop">停止转发</string>
+    <string name="action_copy">复制</string>
+    <string name="action_edit">修改</string>
+    <string name="action_disconnect">断开连接</string>
+    <string name="action_pair">前往配对</string>
+    <string name="action_save">保存</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_delete">删除</string>
+    <string name="action_clear">清空</string>
+    <string name="action_clear_all">全部清除</string>
+    <string name="action_done">完成</string>
+    <string name="action_close">关闭</string>
+    <string name="toast_copied">已复制</string>
+
+    <!-- 设置页 -->
+    <string name="settings_appearance">外观</string>
+    <string name="theme_system">跟随系统</string>
+    <string name="theme_light">浅色</string>
+    <string name="theme_dark">深色</string>
+    <string name="settings_language">语言</string>
+    <string name="language_system">跟随系统</string>
+    <string name="language_english">English</string>
+    <string name="language_chinese">中文</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_credits">鸣谢</string>
+    <string name="label_version">版本</string>
+    <string name="about_summary">通过 WebSocket 接口转发本机 ADB 连接</string>
+    <string name="link_source">源码地址</string>
+
+    <!-- 端口与密码弹窗 -->
+    <string name="port_dialog_title">修改转发端口</string>
+    <string name="port_range_hint">可用范围 1025 到 65535，运行中会重启转发服务</string>
+    <string name="password_dialog_title_set">设置连接密码</string>
+    <string name="password_dialog_title_change">修改连接密码</string>
+    <string name="password_field_label">新密码</string>
+    <string name="password_show">显示密码</string>
+    <string name="password_hide">隐藏密码</string>
+    <string name="password_hint">密码只保存在本机，浏览器连接时校验；可用字母、数字和 -_.@#*&amp; 等常见符号</string>
+    <string name="action_clear_password">清除密码</string>
+
+    <!-- 日志页 -->
+    <string name="log_session_current">当前会话</string>
+    <string name="log_session_app_summary">应用操作与设置变更</string>
+    <string name="log_settings_desc">日志设置</string>
+    <string name="log_history_desc">历史会话</string>
+    <string name="log_search_label">搜索日志</string>
+    <string name="log_category_all">全部</string>
+    <string name="log_category_bridge">系统</string>
+    <string name="log_category_action">操作</string>
+    <string name="log_empty_disabled">日志已关闭，打开日志开关后开始记录</string>
+    <string name="log_empty_idle">转发服务未启用，启动后在这里展示本次会话日志</string>
+    <string name="log_empty_filtered">没有符合条件的日志</string>
+    <string name="log_clear_title">清空当前会话</string>
+    <string name="log_clear_message">是否要删除当前会话日志，删除后无法恢复</string>
+    <string name="log_detail_title">记录详情</string>
+    <string name="log_detail_time">时间</string>
+    <string name="log_detail_category">类别</string>
+    <string name="log_detail_source">来源</string>
+    <string name="log_detail_content">内容</string>
+    <string name="log_toggle_enable">日志开关</string>
+    <string name="log_toggle_enable_desc">关闭后将不再展示和记录日志</string>
+    <string name="log_toggle_persist">记录日志</string>
+    <string name="log_toggle_persist_desc">关闭后仅展示本次会话日志，不写入存储</string>
+    <string name="log_toggle_autoscroll">自动滚动</string>
+    <string name="log_toggle_autoscroll_desc">新日志出现时滚动到最新一条</string>
+    <string name="log_session_app">应用操作</string>
+    <string name="log_session_from">来自 %1$s</string>
+    <string name="log_session_summary">%1$s · %2$d 条 · %3$s</string>
+
+    <!-- 历史会话页 -->
+    <string name="history_count">共 %1$d 个会话，左滑条目可删除</string>
+    <string name="history_empty">还没有历史会话</string>
+    <string name="history_clear_all_title">清除全部日志</string>
+    <string name="history_clear_all_message">所有会话的日志都会删除，删除后无法恢复</string>
+    <string name="history_delete_title">删除会话日志</string>
+    <string name="history_delete_message">%1$s 的日志会删除，删除后无法恢复</string>
+    <string name="history_delete_desc">删除会话日志</string>
+
+    <!-- 转发服务通知 -->
+    <string name="channel_bridge">ADB 桥</string>
+    <string name="notify_forward_title">转发服务运行中</string>
+    <string name="notify_address_line">连接地址 %1$s</string>
+    <string name="notify_waiting">等待连接</string>
+    <string name="notify_client_line">已连接客户端 %1$s</string>
+    <string name="notify_duration_line">连接时长 %1$s</string>
+    <string name="notify_traffic_line">↑ %1$s   ↓ %2$s</string>
+    <string name="notify_connected_summary">已连接 %1$s · %2$s</string>
+
+    <!-- 配对服务通知 -->
+    <string name="channel_pairing">配对</string>
+    <string name="pairing_searching_title">正在查找配对服务</string>
+    <string name="pairing_searching_text">请在无线调试中点击「使用配对码配对设备」</string>
+    <string name="pairing_code_label">配对码</string>
+    <string name="pairing_code_action">输入配对码</string>
+    <string name="pairing_found_title">已找到配对服务</string>
+    <string name="pairing_found_text">端口 %1$d，点击通知按钮输入 6 位配对码</string>
+    <string name="pairing_received_title">正在配对</string>
+    <string name="pairing_received_text">配对码已收到</string>
+    <string name="pairing_success_title">配对成功</string>
+    <string name="pairing_success_text">可以启动转发服务了</string>
+    <string name="pairing_failed_title">配对失败</string>
+    <string name="pairing_failed_text">请重新获取配对码后重试</string>
+    <string name="pairing_missing_title">未发现配对服务</string>
+    <string name="pairing_missing_text">请在无线调试中点击「使用配对码配对设备」后再试</string>
+
+    <!-- 运行日志 -->
+    <string name="log_not_paired">尚未配对，先完成配对再启动转发</string>
+    <string name="log_no_connect_port">未发现设备连接端口，请确认无线调试已开启</string>
+    <string name="log_bridge_started">已启动转发服务</string>
+    <string name="log_bridge_stopped">已停止转发服务</string>
+    <string name="log_no_connection">当前没有可断开的连接</string>
+    <string name="log_disconnected">已主动断开连接</string>
+    <string name="log_pairing_verify_failed">配对校验失败：%1$s</string>
+    <string name="log_pairing_port_unknown">未能确认配对状态：未发现设备连接端口</string>
+    <string name="log_pairing_expired">配对已失效，请重新配对</string>
+    <string name="log_pairing_port_found">发现配对端口 %1$d</string>
+    <string name="log_pairing_searching">正在查找配对服务…</string>
+    <string name="log_connect_port_found">发现连接端口 %1$d</string>
+    <string name="log_pairing_code_prompt">配对端口 %1$d，请在通知中输入配对码</string>
+    <string name="log_pairing_success">配对成功</string>
+    <string name="log_pairing_failed">配对失败</string>
+    <string name="log_pairing_error">配对异常：%1$s</string>
+    <string name="log_port_changed">转发端口已改为 %1$d</string>
+    <string name="log_password_changed">已修改连接密码</string>
+    <string name="log_password_enabled">已开启连接密码</string>
+    <string name="log_password_disabled">已关闭连接密码</string>
+    <string name="log_session_deleted">已删除会话日志</string>
+    <string name="log_session_cleared">已清空会话日志</string>
+    <string name="log_all_cleared">已清除全部日志</string>
+    <string name="log_server_started">转发服务已启动，端口 %1$d</string>
+    <string name="log_server_stopped">转发服务已停止</string>
+    <string name="log_password_rejected">连接密码校验失败：%1$s</string>
+    <string name="ws_password_rejected">连接密码校验失败</string>
+    <string name="log_busy">已有连接占用，拒绝 %1$s</string>
+    <string name="ws_busy">已有连接占用</string>
+    <string name="log_handshake_incomplete">浏览器未完成握手：%1$s</string>
+    <string name="log_client_connected">客户端 %1$s 已连接</string>
+    <string name="log_handshake_ok">浏览器握手成功</string>
+    <string name="log_connection_interrupted">连接被中断</string>
+    <string name="log_connection_error">连接异常：%1$s</string>
+    <string name="log_disconnect_summary">连接结束，上行 %1$d 字节，下行 %2$d 字节，时长 %3$d 秒</string>
+    <string name="log_unknown_remote">未知来源</string>
+    <string name="log_sync_send">写入文件：%1$s</string>
+    <string name="log_sync_recv">读取文件：%1$s</string>
+    <string name="log_sync_list">列出目录：%1$s</string>
+    <string name="log_sync_stat">查询文件：%1$s</string>
+    <string name="log_dest_shell">执行命令：%1$s</string>
+    <string name="log_dest_tcp">端口转发：%1$s</string>
+    <string name="log_dest_localabstract">连接本地服务：%1$s</string>
+    <string name="log_dest_dev">读取设备文件：%1$s</string>
+    <string name="log_dest_framebuffer">读取屏幕画面</string>
+    <string name="log_dest_stream">打开流：%1$s</string>
+</resources>

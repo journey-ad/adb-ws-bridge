@@ -7,6 +7,8 @@ import java.security.MessageDigest
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
+enum class AppLanguage { SYSTEM, ENGLISH, CHINESE }
+
 /** 连接密码与主题偏好，密码以明文保存以便复制完整的连接地址 */
 object AppPrefs {
 
@@ -16,6 +18,7 @@ object AppPrefs {
     private const val KEY_LOG_ENABLED = "log_enabled"
     private const val KEY_LOG_PERSIST = "log_persist"
     private const val KEY_WS_PORT = "ws_port"
+    private const val KEY_LANGUAGE = "language"
 
     const val DEFAULT_WS_PORT = 5556
 
@@ -26,6 +29,7 @@ object AppPrefs {
     val logEnabled = MutableStateFlow(true)
     val logPersist = MutableStateFlow(true)
     val wsPort = MutableStateFlow(DEFAULT_WS_PORT)
+    val language = MutableStateFlow(AppLanguage.SYSTEM)
 
     fun init(context: Context) {
         prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -34,6 +38,7 @@ object AppPrefs {
         logEnabled.value = prefs.getBoolean(KEY_LOG_ENABLED, true)
         logPersist.value = prefs.getBoolean(KEY_LOG_PERSIST, true)
         wsPort.value = prefs.getInt(KEY_WS_PORT, DEFAULT_WS_PORT)
+        language.value = AppLanguage.entries.getOrElse(prefs.getInt(KEY_LANGUAGE, 0)) { AppLanguage.SYSTEM }
     }
 
     val passwordEnabled: Boolean
@@ -68,6 +73,11 @@ object AppPrefs {
     fun setLogPersist(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_LOG_PERSIST, enabled).apply()
         logPersist.value = enabled
+    }
+
+    fun setLanguage(language: AppLanguage) {
+        prefs.edit().putInt(KEY_LANGUAGE, language.ordinal).apply()
+        this.language.value = language
     }
 
     fun setWsPort(port: Int) {

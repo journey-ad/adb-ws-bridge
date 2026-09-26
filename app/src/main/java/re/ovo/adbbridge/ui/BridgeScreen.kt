@@ -44,7 +44,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import re.ovo.adbbridge.R
 import re.ovo.adbbridge.bridge.BridgeStatus
 import re.ovo.adbbridge.bridge.ConnectionSnapshot
 import re.ovo.adbbridge.data.AppPrefs
@@ -60,10 +62,10 @@ data class AppStatus(val text: String, val color: Color)
 fun appStatus(running: Boolean, paired: Boolean, connected: Boolean): AppStatus {
     val status = LocalStatusColors.current
     return when {
-        !paired -> AppStatus("未配对", status.warning)
-        connected -> AppStatus("已连接", status.online)
-        running -> AppStatus("连接中", status.offline)
-        else -> AppStatus("已停止", status.offline)
+        !paired -> AppStatus(stringResource(R.string.status_unpaired), status.warning)
+        connected -> AppStatus(stringResource(R.string.status_connected), status.online)
+        running -> AppStatus(stringResource(R.string.status_connecting), status.offline)
+        else -> AppStatus(stringResource(R.string.status_stopped), status.offline)
     }
 }
 
@@ -191,7 +193,11 @@ private fun ForwardCard(
             Spacer(modifier = Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (running) "转发服务运行中" else "转发服务已停止",
+                    text = if (running) {
+                        stringResource(R.string.forward_running)
+                    } else {
+                        stringResource(R.string.forward_stopped)
+                    },
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Text(
@@ -208,7 +214,7 @@ private fun ForwardCard(
             ) { active ->
                 if (active) {
                     SmallActionButton(
-                        text = "停止转发",
+                        text = stringResource(R.string.action_stop),
                         icon = Icons.Outlined.PowerSettingsNew,
                         onClick = onStop,
                         containerColor = MaterialTheme.colorScheme.error,
@@ -216,7 +222,7 @@ private fun ForwardCard(
                     )
                 } else {
                     SmallActionButton(
-                        text = "开始转发",
+                        text = stringResource(R.string.action_start),
                         icon = Icons.Outlined.PlayArrow,
                         onClick = onStart,
                         enabled = paired,
@@ -238,26 +244,42 @@ private fun AddressCard(
     onChangePassword: () -> Unit,
     onChangePort: () -> Unit,
 ) {
-    SectionCard(title = "连接地址") {
+    SectionCard(title = stringResource(R.string.address_title)) {
         InfoRow(
-            label = "地址",
+            label = stringResource(R.string.label_address),
             value = url,
             action = {
-                SmallActionButton(text = "复制", icon = Icons.Outlined.ContentCopy, onClick = { onCopy(url) })
+                SmallActionButton(
+                    text = stringResource(R.string.action_copy),
+                    icon = Icons.Outlined.ContentCopy,
+                    onClick = { onCopy(url) },
+                )
             },
         )
         InfoRow(
-            label = "端口",
+            label = stringResource(R.string.label_port),
             value = port,
             action = {
-                SmallActionButton(text = "修改", icon = Icons.Outlined.Edit, onClick = onChangePort)
+                SmallActionButton(
+                    text = stringResource(R.string.action_edit),
+                    icon = Icons.Outlined.Edit,
+                    onClick = onChangePort,
+                )
             },
         )
         InfoRow(
-            label = "认证",
-            value = if (passwordEnabled) "需要密码" else "无需密码",
+            label = stringResource(R.string.label_auth),
+            value = if (passwordEnabled) {
+                stringResource(R.string.auth_required)
+            } else {
+                stringResource(R.string.auth_none)
+            },
             action = {
-                SmallActionButton(text = "修改", icon = Icons.Outlined.Edit, onClick = onChangePassword)
+                SmallActionButton(
+                    text = stringResource(R.string.action_edit),
+                    icon = Icons.Outlined.Edit,
+                    onClick = onChangePassword,
+                )
             },
         )
     }
@@ -266,10 +288,10 @@ private fun AddressCard(
 @Composable
 private fun ConnectionCard(connection: ConnectionSnapshot, onDisconnect: () -> Unit) {
     SectionCard(
-        title = "连接信息",
+        title = stringResource(R.string.connection_title),
         action = {
             SmallActionButton(
-                text = "断开连接",
+                text = stringResource(R.string.action_disconnect),
                 icon = Icons.Outlined.LinkOff,
                 onClick = onDisconnect,
                 containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -277,17 +299,17 @@ private fun ConnectionCard(connection: ConnectionSnapshot, onDisconnect: () -> U
             )
         },
     ) {
-        InfoRow(label = "客户端", value = connection.remote)
-        InfoRow(label = "连接时长", value = formatDuration(connection.durationMs))
+        InfoRow(label = stringResource(R.string.label_client), value = connection.remote)
+        InfoRow(label = stringResource(R.string.label_duration), value = formatDuration(connection.durationMs))
         InfoRow(
-            label = "数据吞吐",
+            label = stringResource(R.string.label_throughput),
             value = "↑ ${formatBytes(connection.upBytes)}   ↓ ${formatBytes(connection.downBytes)}",
         )
         Spacer(modifier = Modifier.height(10.dp))
         MetricGrid(
             items = listOf(
-                "上行速率" to formatRate(connection.upRate),
-                "下行速率" to formatRate(connection.downRate),
+                stringResource(R.string.metric_up_rate) to formatRate(connection.upRate),
+                stringResource(R.string.metric_down_rate) to formatRate(connection.downRate),
             ),
         )
     }
@@ -300,28 +322,32 @@ private fun PairingCard(
     onGuidePairing: () -> Unit,
 ) {
     SectionCard(
-        title = "设备无线调试",
+        title = stringResource(R.string.pairing_title),
         action = {
-            SmallActionButton(text = "前往配对", icon = Icons.Outlined.Wifi, onClick = onGuidePairing)
+            SmallActionButton(
+                text = stringResource(R.string.action_pair),
+                icon = Icons.Outlined.Wifi,
+                onClick = onGuidePairing,
+            )
         },
     ) {
         if (paired) {
             Text(
-                text = "已与本机无线调试完成配对",
+                text = stringResource(R.string.pairing_done),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             return@SectionCard
         }
         Text(
-            text = "配对操作说明\n1. 点击「前往配对」打开无线调试开关\n2. 点击「使用配对码配对设备」\n3. 然后下拉通知填写配对码",
+            text = stringResource(R.string.pairing_guide),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (port > 0) {
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "已发现配对端口 $port",
+                text = stringResource(R.string.pairing_port_found, port),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -329,18 +355,19 @@ private fun PairingCard(
     }
 }
 
+@Composable
 private fun forwardSummary(running: Boolean, paired: Boolean): String {
     return when {
-        running -> "同一网络的设备可连接到下面的地址"
-        !paired -> "请先完成设备无线调试配对"
-        else -> "启动后同一网络的设备即可连接"
+        running -> stringResource(R.string.forward_summary_running)
+        !paired -> stringResource(R.string.forward_summary_unpaired)
+        else -> stringResource(R.string.forward_summary_idle)
     }
 }
 
 private fun copyText(context: Context, text: String) {
     val manager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     manager.setPrimaryClip(ClipData.newPlainText("adb-bridge", text))
-    Toast.makeText(context, "已复制", Toast.LENGTH_SHORT).show()
+    Toast.makeText(context, context.getString(R.string.toast_copied), Toast.LENGTH_SHORT).show()
 }
 
 private fun urlEncode(value: String): String = URLEncoder.encode(value, Charsets.UTF_8.name())

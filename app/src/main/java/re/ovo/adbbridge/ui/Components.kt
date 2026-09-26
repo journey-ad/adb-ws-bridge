@@ -49,7 +49,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import re.ovo.adbbridge.R
 
 @Composable
 fun SectionCard(
@@ -163,20 +165,22 @@ fun PortDialog(current: Int, onDismiss: () -> Unit, onConfirm: (Int) -> Unit) {
     val port = value.toIntOrNull()
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = "修改转发端口", style = MaterialTheme.typography.titleMedium) },
+        title = {
+            Text(text = stringResource(R.string.port_dialog_title), style = MaterialTheme.typography.titleMedium)
+        },
         text = {
             Column {
                 OutlinedTextField(
                     value = value,
                     onValueChange = { value = it.filter(Char::isDigit).take(5) },
-                    label = { Text(text = "端口") },
+                    label = { Text(text = stringResource(R.string.label_port)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "可用范围 1025 到 65535，运行中会重启转发服务",
+                    text = stringResource(R.string.port_range_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -187,12 +191,12 @@ fun PortDialog(current: Int, onDismiss: () -> Unit, onConfirm: (Int) -> Unit) {
         },
         confirmButton = {
             TextButton(onClick = { port?.let(onConfirm) }, enabled = port in 1025..65535) {
-                Text(text = "保存")
+                Text(text = stringResource(R.string.action_save))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(text = "取消")
+                Text(text = stringResource(R.string.action_cancel))
             }
         },
     )
@@ -244,7 +248,11 @@ fun PasswordDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = if (passwordEnabled) "修改连接密码" else "设置连接密码",
+                text = if (passwordEnabled) {
+                    stringResource(R.string.password_dialog_title_change)
+                } else {
+                    stringResource(R.string.password_dialog_title_set)
+                },
                 style = MaterialTheme.typography.titleMedium,
             )
         },
@@ -253,7 +261,7 @@ fun PasswordDialog(
                 OutlinedTextField(
                     value = value,
                     onValueChange = { value = sanitizePassword(it) },
-                    label = { Text(text = "新密码") },
+                    label = { Text(text = stringResource(R.string.password_field_label)) },
                     singleLine = true,
                     visualTransformation = if (visible) {
                         VisualTransformation.None
@@ -264,7 +272,11 @@ fun PasswordDialog(
                         IconButton(onClick = { visible = !visible }) {
                             Icon(
                                 imageVector = if (visible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                                contentDescription = if (visible) "隐藏密码" else "显示密码",
+                                contentDescription = if (visible) {
+                                    stringResource(R.string.password_hide)
+                                } else {
+                                    stringResource(R.string.password_show)
+                                },
                             )
                         }
                     },
@@ -272,7 +284,7 @@ fun PasswordDialog(
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "密码只保存在本机，浏览器连接时校验；可用字母、数字和 -_.@#*& 等常见符号",
+                    text = stringResource(R.string.password_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -283,18 +295,21 @@ fun PasswordDialog(
         },
         confirmButton = {
             TextButton(onClick = { if (value.isNotBlank()) onConfirm(value) }) {
-                Text(text = "保存")
+                Text(text = stringResource(R.string.action_save))
             }
         },
         dismissButton = {
             Row {
                 if (passwordEnabled) {
                     TextButton(onClick = onClear) {
-                        Text(text = "清除密码", color = MaterialTheme.colorScheme.error)
+                        Text(
+                            text = stringResource(R.string.action_clear_password),
+                            color = MaterialTheme.colorScheme.error,
+                        )
                     }
                 }
                 TextButton(onClick = onDismiss) {
-                    Text(text = "取消")
+                    Text(text = stringResource(R.string.action_cancel))
                 }
             }
         },

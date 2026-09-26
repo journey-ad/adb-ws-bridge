@@ -11,10 +11,12 @@ import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import re.ovo.adbbridge.MainActivity
+import re.ovo.adbbridge.R
 import re.ovo.adbbridge.data.AppPrefs
 import re.ovo.adbbridge.data.LogCategory
 import re.ovo.adbbridge.data.LogRepository
 import re.ovo.adbbridge.pairing.PairingManager
+import re.ovo.adbbridge.util.appString
 import re.ovo.adbbridge.util.formatBytes
 import re.ovo.adbbridge.util.formatDuration
 import re.ovo.adbbridge.util.getLanAddress
@@ -46,7 +48,7 @@ class BridgeService : Service() {
         if (BridgeStatus.running.value) return
         pairing = PairingManager(this)
         if (!pairing.isPaired) {
-            BridgeStatus.log("尚未配对，先完成配对再启动转发")
+            BridgeStatus.log(appString(R.string.log_not_paired))
             stop()
             return
         }
@@ -62,12 +64,13 @@ class BridgeService : Service() {
             0
         }
         if (port == 0) {
-            BridgeStatus.log("未发现设备连接端口，请确认无线调试已开启")
+            BridgeStatus.log(appString(R.string.log_no_connect_port))
             stop()
             return
         }
 
         server = BridgeServer(
+            context = applicationContext,
             port = AppPrefs.wsPort.value,
             tunnelFactory = { AdbTunnel(TUNNEL_HOST, BridgeStatus.connectPort.value, pairing.key) },
             verifyPassword = { AppPrefs.verify(it) },
@@ -81,16 +84,16 @@ class BridgeService : Service() {
         )
         server?.start()
         BridgeStatus.running.value = true
-        LogRepository.append(null, LogCategory.ACTION, "已启动转发服务")
+        LogRepository.append(null, LogCategory.ACTION, appString(R.string.log_bridge_started))
     }
 
     private fun disconnect() {
         val sessionId = BridgeStatus.connection.value?.id
         if (server?.disconnectActive() != true) {
-            BridgeStatus.log("当前没有可断开的连接")
+            BridgeStatus.log(appString(R.string.log_no_connection))
             return
         }
-        LogRepository.append(sessionId, LogCategory.ACTION, "已主动断开连接")
+        LogRepository.append(sessionId, LogCategory.ACTION, appString(R.string.log_disconnected))
     }
 
     private fun stop() {
@@ -101,7 +104,7 @@ class BridgeService : Service() {
         if (::pairing.isInitialized) {
             pairing.stopDiscovery()
         }
-        LogRepository.append(null, LogCategory.ACTION, "已停止转发服务")
+        LogRepository.append(null, LogCategory.ACTION, appString(R.string.log_bridge_stopped))
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -111,29 +114,41 @@ class BridgeService : Service() {
         val manager = getSystemService(NotificationManager::class.java)
         if (manager.getNotificationChannel(CHANNEL_ID) == null) {
             manager.createNotificationChannel(
-                NotificationChannel(CHANNEL_ID, "ADB 桥", NotificationManager.IMPORTANCE_LOW)
+                NotificationChannel(CHANNEL_ID, appString(R.string.channel_bridge), NotificationManager.IMPORTANCE_LOW)
             )
         }
         val address = "ws://${getLanAddress() ?: "127.0.0.1"}:${AppPrefs.wsPort.value}"
-        val lines = mutableListOf("连接地址 $address")
+        val lines = mutableListOf(appString(R.string.notify_address_line, address))
         val summary = if (snapshot == null) {
-            lines += "等待连接"
-            "等待连接"
+            lines += appString(R.string.notify_waiting)
+            appString(R.string.notify_waiting)
         } else {
-            lines += "已连接客户端 ${snapshot.remote}"
-            lines += "连接时长 ${formatDuration(snapshot.durationMs)}"
-            lines += "↑ ${formatBytes(snapshot.upBytes)}   ↓ ${formatBytes(snapshot.downBytes)}"
-            "已连接 ${snapshot.remote} · ${formatDuration(snapshot.durationMs)}"
+            lines += appString(R.string.notify_client_line, snapshot.remote)
+            lines += appString(R.string.notify_duration_line, formatDuration(snapshot.durationMs))
+            lines += getString(
+                R.string.notify_traffic_line,
+                formatBytes(snapshot.upBytes),
+                formatBytes(snapshot.downBytes),
+            )
+            getString(
+                R.string.notify_connected_summary,
+                snapshot.remote,
+                formatDuration(snapshot.durationMs),
+            )
         }
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.sym_def_app_icon)
-            .setContentTitle("转发服务运行中")
+            .setContentTitle(appString(R.string.notify_forward_title))
             .setContentText(summary)
             .setStyle(NotificationCompat.BigTextStyle().bigText(lines.joinToString("\n")))
             .setContentIntent(openAppIntent())
             .setOngoing(true)
         if (snapshot != null) {
-            builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "断开连接", disconnectIntent())
+            builder.addAction(
+                android.R.drawable.ic_menu_close_clear_cancel,
+                appString(R.string.action_disconnect),
+                disconnectIntent(),
+            )
         }
         return builder.build()
     }

@@ -39,8 +39,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import re.ovo.adbbridge.R
 import re.ovo.adbbridge.bridge.BridgeStatus
 import re.ovo.adbbridge.data.AppPrefs
 import re.ovo.adbbridge.data.LogCategory
@@ -72,7 +74,8 @@ fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
     val selected = sessions.firstOrNull { it.id == selectedId }
     val body = when {
         !logOn -> LogBody.DISABLED
-        !running -> LogBody.IDLE
+        running -> LogBody.LIST
+        selectedId == LogRepository.APP_SESSION && entries.isEmpty() -> LogBody.IDLE
         else -> LogBody.LIST
     }
 
@@ -87,12 +90,12 @@ fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = selected?.let { sessionLabel(it) } ?: "当前会话",
+                        text = selected?.let { sessionLabel(it) } ?: stringResource(R.string.log_session_current),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary,
                     )
                     Text(
-                        text = selected?.let { summary(it) } ?: "应用操作与设置变更",
+                        text = selected?.let { summary(it) } ?: stringResource(R.string.log_session_app_summary),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -101,14 +104,14 @@ fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
                 IconButton(onClick = { settingsDialog = true }) {
                     Icon(
                         imageVector = Icons.Outlined.Settings,
-                        contentDescription = "日志设置",
+                        contentDescription = stringResource(R.string.log_settings_desc),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 IconButton(onClick = onOpenHistory) {
                     Icon(
                         imageVector = Icons.Outlined.History,
-                        contentDescription = "历史会话",
+                        contentDescription = stringResource(R.string.log_history_desc),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -118,31 +121,31 @@ fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
                 OutlinedTextField(
                     value = query,
                     onValueChange = { viewModel.logQuery.value = it },
-                    label = { Text(text = "搜索日志") },
+                    label = { Text(text = stringResource(R.string.log_search_label)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f).height(56.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 TextButton(onClick = { clearing = true }) {
-                    Text(text = "清空")
+                    Text(text = stringResource(R.string.action_clear))
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CategoryChip(
-                    text = "全部",
+                    text = stringResource(R.string.log_category_all),
                     selected = category == null,
                     onClick = { viewModel.logCategory.value = null },
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 CategoryChip(
-                    text = "系统",
+                    text = stringResource(R.string.log_category_bridge),
                     selected = category == LogCategory.BRIDGE,
                     onClick = { viewModel.logCategory.value = LogCategory.BRIDGE },
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 CategoryChip(
-                    text = "操作",
+                    text = stringResource(R.string.log_category_action),
                     selected = category == LogCategory.ACTION,
                     onClick = { viewModel.logCategory.value = LogCategory.ACTION },
                 )
@@ -154,8 +157,8 @@ fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
             label = "logBody",
         ) { state ->
             when (state) {
-                LogBody.DISABLED -> EmptyLog(message = "日志已关闭，打开日志开关后开始记录")
-                LogBody.IDLE -> EmptyLog(message = "转发服务未启用，启动后在这里展示本次会话日志")
+                LogBody.DISABLED -> EmptyLog(message = stringResource(R.string.log_empty_disabled))
+                LogBody.IDLE -> EmptyLog(message = stringResource(R.string.log_empty_idle))
                 LogBody.LIST -> LogList(
                     entries = entries,
                     listState = listState,
@@ -168,18 +171,20 @@ fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
     if (clearing) {
         AlertDialog(
             onDismissRequest = { clearing = false },
-            title = { Text(text = "清空当前会话") },
-            text = { Text(text = "是否要删除当前会话日志，删除后无法恢复") },
+            title = { Text(text = stringResource(R.string.log_clear_title)) },
+            text = { Text(text = stringResource(R.string.log_clear_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.clearLogSession()
                     clearing = false
                 }) {
-                    Text(text = "清空")
+                    Text(text = stringResource(R.string.action_clear))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { clearing = false }) { Text(text = "取消") }
+                TextButton(onClick = { clearing = false }) {
+                    Text(text = stringResource(R.string.action_cancel))
+                }
             },
         )
     }
@@ -187,26 +192,26 @@ fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
     if (settingsDialog) {
         AlertDialog(
             onDismissRequest = { settingsDialog = false },
-            title = { Text(text = "日志设置") },
+            title = { Text(text = stringResource(R.string.log_settings_desc)) },
             text = {
                 Column {
                     ToggleRow(
-                        label = "日志开关",
-                        description = "关闭后将不再展示和记录日志",
+                        label = stringResource(R.string.log_toggle_enable),
+                        description = stringResource(R.string.log_toggle_enable_desc),
                         checked = logOn,
                         onCheckedChange = { AppPrefs.setLogEnabled(it) },
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     ToggleRow(
-                        label = "记录日志",
-                        description = "关闭后仅展示本次会话日志，不写入存储",
+                        label = stringResource(R.string.log_toggle_persist),
+                        description = stringResource(R.string.log_toggle_persist_desc),
                         checked = persisting,
                         onCheckedChange = { AppPrefs.setLogPersist(it) },
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     ToggleRow(
-                        label = "自动滚动",
-                        description = "新日志出现时滚动到最新一条",
+                        label = stringResource(R.string.log_toggle_autoscroll),
+                        description = stringResource(R.string.log_toggle_autoscroll_desc),
                         checked = autoScroll,
                         onCheckedChange = { autoScroll = it },
                     )
@@ -214,7 +219,7 @@ fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
             },
             confirmButton = {
                 TextButton(onClick = { settingsDialog = false }) {
-                    Text(text = "完成")
+                    Text(text = stringResource(R.string.action_done))
                 }
             },
         )
@@ -223,21 +228,34 @@ fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
     detail?.let { entry ->
         AlertDialog(
             onDismissRequest = { detail = null },
-            title = { Text(text = "记录详情") },
+            title = { Text(text = stringResource(R.string.log_detail_title)) },
             text = {
                 Column {
-                    DetailRow(label = "时间", value = "${formatDateTime(entry.time)} ${formatClock(entry.time)}")
+                    DetailRow(
+                        label = stringResource(R.string.log_detail_time),
+                        value = "${formatDateTime(entry.time)} ${formatClock(entry.time)}",
+                    )
                     Spacer(modifier = Modifier.height(4.dp))
-                    DetailRow(label = "类别", value = if (entry.category == LogCategory.ACTION) "操作" else "系统")
+                    DetailRow(
+                        label = stringResource(R.string.log_detail_category),
+                        value = if (entry.category == LogCategory.ACTION) {
+                            stringResource(R.string.log_category_action)
+                        } else {
+                            stringResource(R.string.log_category_bridge)
+                        },
+                    )
                     Spacer(modifier = Modifier.height(4.dp))
-                    DetailRow(label = "来源", value = selected?.let { sessionLabel(it) } ?: "当前会话")
+                    DetailRow(
+                        label = stringResource(R.string.log_detail_source),
+                        value = selected?.let { sessionLabel(it) } ?: stringResource(R.string.log_session_current),
+                    )
                     Spacer(modifier = Modifier.height(4.dp))
-                    DetailRow(label = "内容", value = entry.message)
+                    DetailRow(label = stringResource(R.string.log_detail_content), value = entry.message)
                 }
             },
             confirmButton = {
                 TextButton(onClick = { detail = null }) {
-                    Text(text = "关闭")
+                    Text(text = stringResource(R.string.action_close))
                 }
             },
         )
@@ -258,7 +276,7 @@ private fun LogList(
         if (entries.isEmpty()) {
             item(key = "empty") {
                 Text(
-                    text = "没有符合条件的日志",
+                    text = stringResource(R.string.log_empty_filtered),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 8.dp),
@@ -357,7 +375,11 @@ private fun LogRow(entry: LogEntry, onClick: () -> Unit) {
             contentColor = tagColor,
         ) {
             Text(
-                text = if (isAction) "操作" else "系统",
+                text = if (isAction) {
+                    stringResource(R.string.log_category_action)
+                } else {
+                    stringResource(R.string.log_category_bridge)
+                },
                 style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
             )
@@ -372,8 +394,9 @@ private fun LogRow(entry: LogEntry, onClick: () -> Unit) {
     }
 }
 
+@Composable
 fun sessionLabel(session: LogSession): String {
-    if (session.isAppSession) return "应用操作"
+    if (session.isAppSession) return stringResource(R.string.log_session_app)
     val remote = session.remote.takeIf { it.isNotBlank() }
     return if (remote == null) {
         formatDateTime(session.startAt)
@@ -382,9 +405,11 @@ fun sessionLabel(session: LogSession): String {
     }
 }
 
+@Composable
 fun summary(session: LogSession): String {
     val span = (session.endAt - session.startAt).coerceAtLeast(0)
     val remote = session.remote.takeIf { it.isNotBlank() }
-    val source = remote?.let { "来自 $it" } ?: "应用操作与设置变更"
-    return "$source · ${session.count} 条 · ${formatDuration(span)}"
+    val source = remote?.let { stringResource(R.string.log_session_from, it) }
+        ?: stringResource(R.string.log_session_app_summary)
+    return stringResource(R.string.log_session_summary, source, session.count, formatDuration(span))
 }

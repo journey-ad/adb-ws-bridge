@@ -20,7 +20,9 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import re.ovo.adbbridge.MainActivity
+import re.ovo.adbbridge.R
 import re.ovo.adbbridge.bridge.BridgeStatus
+import re.ovo.adbbridge.util.appString
 
 /**
  * 配对期间常驻，通知里提供配对码输入框，配对码取自系统开发者选项的无线调试页面
@@ -46,7 +48,6 @@ class PairingService : Service() {
         }
 
         startForeground(NOTIFICATION_ID, searchingNotification())
-        BridgeStatus.log("正在查找配对服务…")
         pairing.discoverPairingPort()
 
         scope.launch {
@@ -54,8 +55,10 @@ class PairingService : Service() {
                 BridgeStatus.pairingPort.filter { it > 0 }.first()
             }
             if (port == null) {
-                BridgeStatus.log("未发现配对服务，请确认已点击「使用配对码配对设备」")
-                notifyPlain("未发现配对服务", "请在无线调试中点击「使用配对码配对设备」后再试")
+                notifyPlain(
+                    appString(R.string.pairing_missing_title),
+                    appString(R.string.pairing_missing_text),
+                )
                 stop()
                 return@launch
             }
@@ -65,14 +68,23 @@ class PairingService : Service() {
     }
 
     private fun pair(code: String) {
-        notifyPlain("正在配对", "配对码已收到")
+        notifyPlain(
+            appString(R.string.pairing_received_title),
+            appString(R.string.pairing_received_text),
+        )
         scope.launch {
             val ok = pairing.pair(BridgeStatus.pairingPort.value, code)
             pairing.stopDiscovery()
             if (ok) {
-                notifyPlain("配对成功", "可以启动转发服务了")
+                notifyPlain(
+                    appString(R.string.pairing_success_title),
+                    appString(R.string.pairing_success_text),
+                )
             } else {
-                notifyPlain("配对失败", "请重新获取配对码后重试")
+                notifyPlain(
+                    appString(R.string.pairing_failed_title),
+                    appString(R.string.pairing_failed_text),
+                )
             }
             delay(2000)
             stop()
@@ -87,8 +99,8 @@ class PairingService : Service() {
     }
 
     private fun searchingNotification() = builder()
-        .setContentTitle("正在查找配对服务")
-        .setContentText("请在无线调试中点击「使用配对码配对设备」")
+        .setContentTitle(appString(R.string.pairing_searching_title))
+        .setContentText(appString(R.string.pairing_searching_text))
         .build()
 
     private fun notifyPlain(title: String, text: String) {
@@ -104,22 +116,22 @@ class PairingService : Service() {
     }
 
     private fun notifyInput(port: Int) {
-        val remoteInput = RemoteInput.Builder(KEY_CODE).setLabel("配对码").build()
+        val remoteInput = RemoteInput.Builder(KEY_CODE).setLabel(appString(R.string.pairing_code_label)).build()
         val pendingIntent = PendingIntent.getBroadcast(
             this,
             1,
             Intent(this, PairingCodeReceiver::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
         )
-        val action = NotificationCompat.Action.Builder(0, "输入配对码", pendingIntent)
+        val action = NotificationCompat.Action.Builder(0, appString(R.string.pairing_code_action), pendingIntent)
             .addRemoteInput(remoteInput)
             .build()
-        BridgeStatus.log("配对端口 $port，请在通知中输入配对码")
+        BridgeStatus.log(appString(R.string.log_pairing_code_prompt, port))
         getSystemService(NotificationManager::class.java).notify(
             NOTIFICATION_ID,
             builder()
-                .setContentTitle("已找到配对服务")
-                .setContentText("端口 $port，点击通知按钮输入 6 位配对码")
+                .setContentTitle(appString(R.string.pairing_found_title))
+                .setContentText(appString(R.string.pairing_found_text, port))
                 .addAction(action)
                 .build(),
         )
@@ -129,7 +141,11 @@ class PairingService : Service() {
         val manager = getSystemService(NotificationManager::class.java)
         if (manager.getNotificationChannel(CHANNEL_ID) == null) {
             manager.createNotificationChannel(
-                NotificationChannel(CHANNEL_ID, "配对", NotificationManager.IMPORTANCE_HIGH)
+                NotificationChannel(
+                    CHANNEL_ID,
+                    appString(R.string.channel_pairing),
+                    NotificationManager.IMPORTANCE_HIGH,
+                )
             )
         }
         return NotificationCompat.Builder(this, CHANNEL_ID)

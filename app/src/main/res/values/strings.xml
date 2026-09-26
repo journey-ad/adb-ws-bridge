@@ -1,4 +1,195 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">ADB 桥</string>
+    <string name="app_name" translatable="false">ADB Bridge</string>
+
+    <!-- 页面标题与底部标签 -->
+    <string name="screen_bridge_title">ADB Bridge</string>
+    <string name="screen_bridge_label">Bridge</string>
+    <string name="screen_log_title">Logs</string>
+    <string name="screen_settings_title">Settings</string>
+    <string name="screen_history_title">History</string>
+
+    <!-- 顶部状态 -->
+    <string name="status_unpaired">Not paired</string>
+    <string name="status_connected">Connected</string>
+    <string name="status_connecting">Connecting</string>
+    <string name="status_stopped">Stopped</string>
+
+    <!-- 转发页 -->
+    <string name="forward_running">Forwarding service running</string>
+    <string name="forward_stopped">Forwarding service stopped</string>
+    <string name="forward_summary_running">Devices on the same network can connect to the address below</string>
+    <string name="forward_summary_unpaired">Pair wireless debugging on this device first</string>
+    <string name="forward_summary_idle">Devices on the same network can connect once it is running</string>
+    <string name="address_title">Connection address</string>
+    <string name="label_address">Address</string>
+    <string name="label_port">Port</string>
+    <string name="label_auth">Auth</string>
+    <string name="auth_required">Password required</string>
+    <string name="auth_none">No password</string>
+    <string name="connection_title">Connection</string>
+    <string name="label_client">Client</string>
+    <string name="label_duration">Duration</string>
+    <string name="label_throughput">Transfer</string>
+    <string name="metric_up_rate">Upload rate</string>
+    <string name="metric_down_rate">Download rate</string>
+    <string name="pairing_title">Wireless debugging</string>
+    <string name="pairing_done">Paired with wireless debugging on this device</string>
+    <string name="pairing_guide">Pairing steps\n1. Tap "Pair device" to turn on wireless debugging\n2. Tap "Pair device with pairing code"\n3. Pull down the notification and enter the pairing code</string>
+    <string name="pairing_port_found">Pairing port %1$d found</string>
+
+    <!-- 通用操作 -->
+    <string name="action_start">Start</string>
+    <string name="action_stop">Stop</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_disconnect">Disconnect</string>
+    <string name="action_pair">Pair device</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_clear">Clear</string>
+    <string name="action_clear_all">Clear all</string>
+    <string name="action_done">Done</string>
+    <string name="action_close">Close</string>
+    <string name="toast_copied">Copied</string>
+
+    <!-- 设置页 -->
+    <string name="settings_appearance">Appearance</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="settings_language">Language</string>
+    <string name="language_system">System</string>
+    <string name="language_english">English</string>
+    <string name="language_chinese">中文</string>
+    <string name="settings_about">About</string>
+    <string name="settings_credits">Acknowledgements</string>
+    <string name="label_version">Version</string>
+    <string name="about_summary">Forwards this device\'s ADB connection over a WebSocket interface</string>
+    <string name="link_source">Source</string>
+
+    <!-- 端口与密码弹窗 -->
+    <string name="port_dialog_title">Change forwarding port</string>
+    <string name="port_range_hint">Range 1025 to 65535, changing it restarts the forwarding service while running</string>
+    <string name="password_dialog_title_set">Set connection password</string>
+    <string name="password_dialog_title_change">Change connection password</string>
+    <string name="password_field_label">New password</string>
+    <string name="password_show">Show password</string>
+    <string name="password_hide">Hide password</string>
+    <string name="password_hint">The password stays on this device and is checked when the browser connects. Letters, digits and symbols like -_.@#*&amp; are allowed</string>
+    <string name="action_clear_password">Remove password</string>
+
+    <!-- 日志页 -->
+    <string name="log_session_current">Current session</string>
+    <string name="log_session_app_summary">In-app actions and settings changes</string>
+    <string name="log_settings_desc">Log settings</string>
+    <string name="log_history_desc">Past sessions</string>
+    <string name="log_search_label">Search logs</string>
+    <string name="log_category_all">All</string>
+    <string name="log_category_bridge">System</string>
+    <string name="log_category_action">Actions</string>
+    <string name="log_empty_disabled">Logging is off, turn on the log switch to start recording</string>
+    <string name="log_empty_idle">The forwarding service is off, this session\'s logs appear once it runs</string>
+    <string name="log_empty_filtered">No logs match the filter</string>
+    <string name="log_clear_title">Clear current session</string>
+    <string name="log_clear_message">Delete this session\'s logs? They cannot be recovered</string>
+    <string name="log_detail_title">Entry details</string>
+    <string name="log_detail_time">Time</string>
+    <string name="log_detail_category">Type</string>
+    <string name="log_detail_source">Source</string>
+    <string name="log_detail_content">Content</string>
+    <string name="log_toggle_enable">Log switch</string>
+    <string name="log_toggle_enable_desc">Turning it off stops showing and recording logs</string>
+    <string name="log_toggle_persist">Save logs</string>
+    <string name="log_toggle_persist_desc">Turning it off keeps this session\'s logs in memory only</string>
+    <string name="log_toggle_autoscroll">Auto scroll</string>
+    <string name="log_toggle_autoscroll_desc">Scrolls to the newest entry when logs arrive</string>
+    <string name="log_session_app">In-app</string>
+    <string name="log_session_from">From %1$s</string>
+    <string name="log_session_summary">%1$s · %2$d entries · %3$s</string>
+
+    <!-- 历史会话页 -->
+    <string name="history_count">%1$d sessions, swipe an entry to delete</string>
+    <string name="history_empty">No past sessions</string>
+    <string name="history_clear_all_title">Clear all logs</string>
+    <string name="history_clear_all_message">Logs of every session are deleted and cannot be recovered</string>
+    <string name="history_delete_title">Delete session logs</string>
+    <string name="history_delete_message">Logs of %1$s are deleted and cannot be recovered</string>
+    <string name="history_delete_desc">Delete session logs</string>
+
+    <!-- 转发服务通知 -->
+    <string name="channel_bridge">ADB Bridge</string>
+    <string name="notify_forward_title">Forwarding service running</string>
+    <string name="notify_address_line">Address %1$s</string>
+    <string name="notify_waiting">Waiting for connection</string>
+    <string name="notify_client_line">Client %1$s connected</string>
+    <string name="notify_duration_line">Duration %1$s</string>
+    <string name="notify_traffic_line">↑ %1$s   ↓ %2$s</string>
+    <string name="notify_connected_summary">%1$s connected · %2$s</string>
+
+    <!-- 配对服务通知 -->
+    <string name="channel_pairing">Pairing</string>
+    <string name="pairing_searching_title">Looking for the pairing service</string>
+    <string name="pairing_searching_text">Tap "Pair device with pairing code" in wireless debugging</string>
+    <string name="pairing_code_label">Pairing code</string>
+    <string name="pairing_code_action">Enter pairing code</string>
+    <string name="pairing_found_title">Pairing service found</string>
+    <string name="pairing_found_text">Port %1$d, tap the notification button to enter the 6-digit code</string>
+    <string name="pairing_received_title">Pairing</string>
+    <string name="pairing_received_text">Pairing code received</string>
+    <string name="pairing_success_title">Paired</string>
+    <string name="pairing_success_text">The forwarding service can be started now</string>
+    <string name="pairing_failed_title">Pairing failed</string>
+    <string name="pairing_failed_text">Get a new pairing code and try again</string>
+    <string name="pairing_missing_title">Pairing service not found</string>
+    <string name="pairing_missing_text">Tap "Pair device with pairing code" in wireless debugging, then try again</string>
+
+    <!-- 运行日志 -->
+    <string name="log_not_paired">Not paired yet, pair the device before starting forwarding</string>
+    <string name="log_no_connect_port">No device connect port found, check that wireless debugging is on</string>
+    <string name="log_bridge_started">Forwarding service started</string>
+    <string name="log_bridge_stopped">Forwarding service stopped</string>
+    <string name="log_no_connection">No connection to disconnect</string>
+    <string name="log_disconnected">Connection closed on request</string>
+    <string name="log_pairing_verify_failed">Pairing check failed: %1$s</string>
+    <string name="log_pairing_port_unknown">Pairing state not confirmed, no device connect port found</string>
+    <string name="log_pairing_expired">Pairing expired, pair the device again</string>
+    <string name="log_pairing_port_found">Pairing port %1$d found</string>
+    <string name="log_pairing_searching">Looking for the pairing service…</string>
+    <string name="log_connect_port_found">Connect port %1$d found</string>
+    <string name="log_pairing_code_prompt">Pairing port %1$d, enter the pairing code in the notification</string>
+    <string name="log_pairing_success">Paired</string>
+    <string name="log_pairing_failed">Pairing failed</string>
+    <string name="log_pairing_error">Pairing error: %1$s</string>
+    <string name="log_port_changed">Forwarding port changed to %1$d</string>
+    <string name="log_password_changed">Connection password changed</string>
+    <string name="log_password_enabled">Connection password enabled</string>
+    <string name="log_password_disabled">Connection password disabled</string>
+    <string name="log_session_deleted">Session logs deleted</string>
+    <string name="log_session_cleared">Session logs cleared</string>
+    <string name="log_all_cleared">All logs cleared</string>
+    <string name="log_server_started">Forwarding service started on port %1$d</string>
+    <string name="log_server_stopped">Forwarding service stopped</string>
+    <string name="log_password_rejected">Password check failed: %1$s</string>
+    <string name="ws_password_rejected">Password check failed</string>
+    <string name="log_busy">Already in use, rejected %1$s</string>
+    <string name="ws_busy">Already in use</string>
+    <string name="log_handshake_incomplete">Browser handshake incomplete: %1$s</string>
+    <string name="log_client_connected">Client %1$s connected</string>
+    <string name="log_handshake_ok">Browser handshake done</string>
+    <string name="log_connection_interrupted">Connection interrupted</string>
+    <string name="log_connection_error">Connection error: %1$s</string>
+    <string name="log_disconnect_summary">Connection ended, up %1$d bytes, down %2$d bytes, lasted %3$d s</string>
+    <string name="log_unknown_remote">Unknown source</string>
+    <string name="log_sync_send">Write file: %1$s</string>
+    <string name="log_sync_recv">Read file: %1$s</string>
+    <string name="log_sync_list">List directory: %1$s</string>
+    <string name="log_sync_stat">Query file: %1$s</string>
+    <string name="log_dest_shell">Run command: %1$s</string>
+    <string name="log_dest_tcp">Forward port: %1$s</string>
+    <string name="log_dest_localabstract">Connect local service: %1$s</string>
+    <string name="log_dest_dev">Read device file: %1$s</string>
+    <string name="log_dest_framebuffer">Read screen frames</string>
+    <string name="log_dest_stream">Open stream: %1$s</string>
 </resources>
