@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.LinkOff
 import androidx.compose.material.icons.outlined.PlayArrow
@@ -31,6 +32,8 @@ import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -80,6 +83,7 @@ fun BridgeScreen(viewModel: MainViewModel) {
     val password by AppPrefs.password.collectAsState()
     val address by viewModel.lanAddress.collectAsState()
     val wsPort by AppPrefs.wsPort.collectAsState()
+    val trusted by AppPrefs.trustedClients.collectAsState()
     val url = "ws://${address ?: "127.0.0.1"}:$wsPort/adb"
     val urlToCopy = password?.let { "$url?password=${urlEncode(it)}" } ?: url
     val port = "$wsPort"
@@ -131,6 +135,14 @@ fun BridgeScreen(viewModel: MainViewModel) {
                     paired = paired,
                     port = pairingPort,
                     onGuidePairing = { viewModel.startPairing() },
+                )
+            }
+        }
+        item(key = "authorized") {
+            Box(modifier = itemAnimation()) {
+                AuthorizedCard(
+                    devices = trusted.sorted(),
+                    onRevoke = { AppPrefs.revokeClient(it) },
                 )
             }
         }
@@ -351,6 +363,36 @@ private fun PairingCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+    }
+}
+
+@Composable
+private fun AuthorizedCard(devices: List<String>, onRevoke: (String) -> Unit) {
+    SectionCard(title = stringResource(R.string.authorized_title)) {
+        if (devices.isEmpty()) {
+            Text(
+                text = stringResource(R.string.auth_device_empty),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            return@SectionCard
+        }
+        devices.forEach { device ->
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = device,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = { onRevoke(device) }) {
+                    Icon(
+                        imageVector = Icons.Outlined.Delete,
+                        contentDescription = stringResource(R.string.auth_revoke_desc),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
         }
     }
 }

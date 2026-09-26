@@ -12,6 +12,8 @@ object BridgeStatus {
     val pairingPort = MutableStateFlow(0)
     val connectPort = MutableStateFlow(0)
     val paired = MutableStateFlow(false)
+    val pendingAuth = MutableStateFlow<String?>(null)
+    val appForeground = MutableStateFlow(false)
 
     fun log(message: String) {
         log(null, LogCategory.BRIDGE, message)

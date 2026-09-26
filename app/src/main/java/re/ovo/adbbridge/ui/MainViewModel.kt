@@ -105,6 +105,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         getApplication<Application>().startService(intent)
     }
 
+    fun decideAuth(allowed: Boolean) {
+        val action = if (allowed) BridgeService.ACTION_ALLOW else BridgeService.ACTION_DENY
+        val intent = Intent(getApplication(), BridgeService::class.java).setAction(action)
+        runCatching { getApplication<Application>().startService(intent) }
+    }
+
     fun disconnect() {
         val intent = Intent(getApplication(), BridgeService::class.java)
             .setAction(BridgeService.ACTION_DISCONNECT)

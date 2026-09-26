@@ -38,6 +38,7 @@ class BridgeServer(
     private val port: Int,
     private val tunnelFactory: () -> AdbTunnel,
     private val verifyPassword: (String?) -> Boolean,
+    private val authorize: suspend (String) -> Boolean,
     private val onSessionChanged: (ConnectionSnapshot?) -> Unit,
     private val onLog: (String?, LogCategory, String) -> Unit,
 ) : Closeable {
@@ -50,6 +51,7 @@ class BridgeServer(
     private var activeJob: Job? = null
 
     private val BUSY_CODE: Short = 4001
+    private val DENIED_CODE: Short = 4002
     private val UNAUTHORIZED_CODE: Short = 4003
     private val ADB_COMMAND_CNXN = 0x4e584e43
     private val TAG = "BridgeServer"
@@ -86,6 +88,11 @@ class BridgeServer(
                             LogCategory.BRIDGE,
                             context.appString(R.string.log_handshake_incomplete, remote),
                         )
+                        return@webSocket
+                    }
+                    if (!authorize(remote)) {
+                        sessionFree.set(true)
+                        ws.close(CloseReason(DENIED_CODE, context.appString(R.string.ws_denied)))
                         return@webSocket
                     }
                     val sessionId = LogRepository.openSession(remote)

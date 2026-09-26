@@ -19,6 +19,7 @@ object AppPrefs {
     private const val KEY_LOG_PERSIST = "log_persist"
     private const val KEY_WS_PORT = "ws_port"
     private const val KEY_LANGUAGE = "language"
+    private const val KEY_TRUSTED = "trusted_clients"
 
     const val DEFAULT_WS_PORT = 5556
 
@@ -30,6 +31,7 @@ object AppPrefs {
     val logPersist = MutableStateFlow(true)
     val wsPort = MutableStateFlow(DEFAULT_WS_PORT)
     val language = MutableStateFlow(AppLanguage.SYSTEM)
+    val trustedClients = MutableStateFlow<Set<String>>(emptySet())
 
     fun init(context: Context) {
         prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -39,6 +41,7 @@ object AppPrefs {
         logPersist.value = prefs.getBoolean(KEY_LOG_PERSIST, true)
         wsPort.value = prefs.getInt(KEY_WS_PORT, DEFAULT_WS_PORT)
         language.value = AppLanguage.entries.getOrElse(prefs.getInt(KEY_LANGUAGE, 0)) { AppLanguage.SYSTEM }
+        trustedClients.value = prefs.getStringSet(KEY_TRUSTED, emptySet())?.toSet() ?: emptySet()
     }
 
     val passwordEnabled: Boolean
@@ -83,5 +86,19 @@ object AppPrefs {
     fun setWsPort(port: Int) {
         prefs.edit().putInt(KEY_WS_PORT, port).apply()
         wsPort.value = port
+    }
+
+    fun isTrusted(remote: String): Boolean = remote in trustedClients.value
+
+    fun trustClient(remote: String) {
+        val next = trustedClients.value + remote
+        prefs.edit().putStringSet(KEY_TRUSTED, next).apply()
+        trustedClients.value = next
+    }
+
+    fun revokeClient(remote: String) {
+        val next = trustedClients.value - remote
+        prefs.edit().putStringSet(KEY_TRUSTED, next).apply()
+        trustedClients.value = next
     }
 }

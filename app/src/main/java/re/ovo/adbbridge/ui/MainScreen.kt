@@ -17,12 +17,14 @@ import androidx.compose.material.icons.automirrored.outlined.Article
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.SwapHoriz
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
@@ -90,11 +92,17 @@ fun MainScreen(
     val paired by BridgeStatus.paired.collectAsState()
     val connection by BridgeStatus.connection.collectAsState()
     val status = appStatus(running = running, paired = paired, connected = connection != null)
+    val pendingAuth by BridgeStatus.pendingAuth.collectAsState()
 
     val lifecycle = LocalLifecycleOwner.current
     DisposableEffect(lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshPaired()
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> viewModel.refreshPaired()
+                Lifecycle.Event.ON_START -> BridgeStatus.appForeground.value = true
+                Lifecycle.Event.ON_STOP -> BridgeStatus.appForeground.value = false
+                else -> Unit
+            }
         }
         lifecycle.lifecycle.addObserver(observer)
         onDispose { lifecycle.lifecycle.removeObserver(observer) }
@@ -131,6 +139,46 @@ fun MainScreen(
             onSelect = onScreenChange,
         )
     }
+
+    pendingAuth?.let { remote ->
+        AuthDialog(
+            remote = remote,
+            onAllow = { viewModel.decideAuth(allowed = true) },
+            onDeny = { viewModel.decideAuth(allowed = false) },
+        )
+    }
+}
+
+@Composable
+private fun AuthDialog(remote: String, onAllow: () -> Unit, onDeny: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDeny,
+        title = { Text(text = stringResource(R.string.auth_notify_title)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.auth_notify_text, remote),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = stringResource(R.string.auth_dialog_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onAllow) {
+                Text(text = stringResource(R.string.auth_action_allow))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDeny) {
+                Text(text = stringResource(R.string.auth_action_deny))
+            }
+        },
+    )
 }
 
 @Composable

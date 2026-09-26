@@ -67,6 +67,9 @@
     <string name="label_version">版本</string>
     <string name="about_summary">通过 WebSocket 接口转发本机 ADB 连接</string>
     <string name="link_source">源码地址</string>
+    <string name="authorized_title">已授权的设备</string>
+    <string name="auth_device_empty">还没有已授权的设备</string>
+    <string name="auth_revoke_desc">撤销此设备</string>
 
     <!-- 端口与密码弹窗 -->
     <string name="port_dialog_title">修改转发端口</string>
@@ -127,6 +130,14 @@
     <string name="notify_traffic_line">↑ %1$s   ↓ %2$s</string>
     <string name="notify_connected_summary">已连接 %1$s · %2$s</string>
 
+    <!-- 连接授权通知 -->
+    <string name="channel_auth">连接授权</string>
+    <string name="auth_notify_title">新的连接请求</string>
+    <string name="auth_notify_text">%1$s 正在请求连接到本机 ADB</string>
+    <string name="auth_action_allow">允许</string>
+    <string name="auth_action_deny">拒绝</string>
+    <string name="auth_dialog_note">允许后该设备再次连接不再询问，可在设置中撤销</string>
+
     <!-- 配对服务通知 -->
     <string name="channel_pairing">配对</string>
     <string name="pairing_searching_title">正在查找配对服务</string>
@@ -175,6 +186,10 @@
     <string name="log_busy">已有连接占用，拒绝 %1$s</string>
     <string name="ws_busy">已有连接占用</string>
     <string name="log_handshake_incomplete">浏览器未完成握手：%1$s</string>
+    <string name="log_auth_allowed">已允许 %1$s 连接</string>
+    <string name="log_auth_denied">已拒绝 %1$s 连接</string>
+    <string name="log_auth_timeout">等待授权超时，已拒绝 %1$s</string>
+    <string name="ws_denied">连接被拒绝</string>
     <string name="log_client_connected">客户端 %1$s 已连接</string>
     <string name="log_handshake_ok">浏览器握手成功</string>
     <string name="log_connection_interrupted">连接被中断</string>

@@ -68,6 +68,9 @@
     <string name="label_version">Version</string>
     <string name="about_summary">Forwards this device\'s ADB connection over a WebSocket interface</string>
     <string name="link_source">Source</string>
+    <string name="authorized_title">Authorized devices</string>
+    <string name="auth_device_empty">No authorized devices</string>
+    <string name="auth_revoke_desc">Revoke this device</string>
 
     <!-- 端口与密码弹窗 -->
     <string name="port_dialog_title">Change forwarding port</string>
@@ -128,6 +131,14 @@
     <string name="notify_traffic_line">↑ %1$s   ↓ %2$s</string>
     <string name="notify_connected_summary">%1$s connected · %2$s</string>
 
+    <!-- 连接授权通知 -->
+    <string name="channel_auth">Connection approval</string>
+    <string name="auth_notify_title">New connection request</string>
+    <string name="auth_notify_text">%1$s is requesting access to this device\'s ADB</string>
+    <string name="auth_action_allow">Allow</string>
+    <string name="auth_action_deny">Deny</string>
+    <string name="auth_dialog_note">Allowed devices are not asked again, revoke them in Settings</string>
+
     <!-- 配对服务通知 -->
     <string name="channel_pairing">Pairing</string>
     <string name="pairing_searching_title">Looking for the pairing service</string>
@@ -176,6 +187,10 @@
     <string name="log_busy">Already in use, rejected %1$s</string>
     <string name="ws_busy">Already in use</string>
     <string name="log_handshake_incomplete">Browser handshake incomplete: %1$s</string>
+    <string name="log_auth_allowed">Allowed %1$s</string>
+    <string name="log_auth_denied">Denied %1$s</string>
+    <string name="log_auth_timeout">Approval timed out, %1$s denied</string>
+    <string name="ws_denied">Connection denied</string>
     <string name="log_client_connected">Client %1$s connected</string>
     <string name="log_handshake_ok">Browser handshake done</string>
     <string name="log_connection_interrupted">Connection interrupted</string>
