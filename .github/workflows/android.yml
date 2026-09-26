@@ -9,11 +9,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/v') }}
 
 jobs:
   build:
+    if: github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
@@ -31,15 +37,6 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
 
-      - name: Decode keystore
-        if: github.event_name != 'pull_request'
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > adbbridge.keystore
-          fi
-
       - name: Run lint
         run: ./gradlew lintDebug
 
@@ -49,32 +46,80 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug
 
+      - name: Resolve artifact name
+        id: artifact
+        run: echo "value=$(basename app/build/outputs/apk/debug/*.apk)" >> "$GITHUB_OUTPUT"
+
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: debug-apk
+          name: ${{ steps.artifact.outputs.value }}
           path: app/build/outputs/apk/debug/*.apk
 
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Decode keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::未配置 KEYSTORE_BASE64，发布包将没有签名"
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > adbbridge.keystore
+
       - name: Build release
-        if: startsWith(github.ref, 'refs/tags/v')
         run: ./gradlew assembleRelease -PversionName=${{ github.ref_name }} -PversionCode=${{ github.run_number }}
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
 
-      - name: Upload release APK
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-apk
-          path: app/build/outputs/apk/release/*.apk
+      - name: Compose release notes
+        env:
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          PREV=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)
+          if [ -n "$PREV" ]; then
+            URL="https://github.com/$REPO/compare/$PREV...$TAG"
+            RANGE="$PREV..$TAG"
+          else
+            URL="https://github.com/$REPO/commits/$TAG"
+            RANGE="$TAG"
+          fi
+          git log --no-merges --abbrev=7 \
+            --pretty=format:"- [%h](https://github.com/$REPO/commit/%H) %s" "$RANGE" > commits.md
+          sed -e "s|{{VERSION}}|$TAG|g" -e "s|{{COMPARE_URL}}|$URL|g" \
+            -e "/{{COMMITS}}/r commits.md" -e "/{{COMMITS}}/d" \
+            .github/RELEASE_TEMPLATE.md > release-notes.md
+          rm -f commits.md
 
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: release-notes.md
+          fail_on_unmatched_files: true
           files: app/build/outputs/apk/release/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

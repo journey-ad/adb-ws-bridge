@@ -1,3 +1,5 @@
+import com.android.build.api.variant.FilterConfiguration
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -21,6 +23,11 @@ fun getBaseVersion(): String {
     return tag.takeIf { it.matches(Regex("\\d+(\\.\\d+)*")) } ?: "0.1.0"
 }
 
+val packageVersion = (project.findProperty("versionName") as? String ?: getBaseVersion()).removePrefix("v")
+
+/** 架构编号，发布包的 versionCode 按架构拉开，同一版本的不同架构包不会互相覆盖 */
+val abiCodes = mapOf("armeabi-v7a" to 1, "arm64-v8a" to 2, "x86_64" to 3)
+
 android {
     namespace = "re.ovo.adbbridge"
     compileSdk {
@@ -34,8 +41,7 @@ android {
         minSdk = 30
         targetSdk = 36
         versionCode = (project.findProperty("versionCode") as? String)?.toIntOrNull() ?: 1
-        versionName = (project.findProperty("versionName") as? String ?: getBaseVersion())
-            .removePrefix("v") + (project.findProperty("versionSuffix") as? String ?: "") + " (${getGitHash()})"
+        versionName = packageVersion + (project.findProperty("versionSuffix") as? String ?: "") + " (${getGitHash()})"
     }
 
     // 打包签名取自仓库根的 adbbridge.keystore，密码走环境变量或 gradle 属性，未配置时产出的 APK 保持未签名
@@ -53,6 +59,16 @@ android {
                 keyAlias = signingKeyAlias
                 keyPassword = keyPwd
             }
+        }
+    }
+
+    // 发布包按架构拆成单架构包与通用包，调试包保持单个通用包
+    splits {
+        abi {
+            isEnable = gradle.startParameter.taskNames.any { it.contains("Release") }
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86_64")
+            isUniversalApk = true
         }
     }
 
@@ -90,6 +106,25 @@ android {
             excludes += "/META-INF/LICENSE.md"
             excludes += "/META-INF/LICENSE.txt"
             excludes += "/META-INF/NOTICE.md"
+        }
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        val isRelease = variant.name == "release"
+        val prefix = if (isRelease) "ADBBridge-v$packageVersion-" else "ADBBridge-debug-v$packageVersion-"
+        variant.outputs.forEach { output ->
+            val abi = output.filters
+                .firstOrNull { it.filterType == FilterConfiguration.FilterType.ABI }
+                ?.identifier
+                ?: "universal"
+            if (isRelease) {
+                abiCodes[abi]?.let { code ->
+                    output.versionCode.set((output.versionCode.get() ?: 0) * 10 + code)
+                }
+            }
+            output.outputFileName.set("$prefix$abi.apk")
         }
     }
 }
