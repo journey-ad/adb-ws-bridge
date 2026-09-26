@@ -116,6 +116,13 @@ class BridgeService : Service() {
         server?.start()
         BridgeStatus.running.value = true
         LogRepository.append(null, LogCategory.ACTION, appString(R.string.log_bridge_started))
+        // 切换语言后刷新通知
+        scope.launch {
+            AppPrefs.language.collect {
+                notifiedAt = 0L
+                updateNotification(BridgeStatus.connection.value)
+            }
+        }
     }
 
     /** 新客户端必须经本机确认，已授权过的地址直接放行 */
