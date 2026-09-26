@@ -26,18 +26,27 @@ jobs:
           else
             gh api "repos/$REPO/releases/latest" > release.json
           fi
-          python3 - <<'PY'
-          import json
+          VERSION=$(python3 -c "import json;print(json.load(open('release.json'))['tag_name'])")
+          gh api "repos/$REPO/commits/$VERSION" --jq .sha > commit.txt
+          COMMIT="$(cat commit.txt)" python3 - <<'PY'
+          import json, os
 
           release = json.load(open("release.json"))
-          urls = {asset["name"]: asset["browser_download_url"] for asset in release["assets"]}
+          commit = os.environ["COMMIT"].strip()
 
           def find(suffix):
-              return next((url for name, url in urls.items() if name.endswith(suffix)), None)
+              for asset in release["assets"]:
+                  if asset["name"].endswith(suffix):
+                      return {"url": asset["browser_download_url"], "size": asset["size"]}
+              return None
 
           data = {
               "version": release["tag_name"],
+              "repository": os.environ["REPO"],
+              "commit": commit,
+              "shortCommit": commit[:7],
               "publishedAt": release["published_at"],
+              "releaseUrl": release["html_url"],
               "assets": {
                   "universal": find("-universal.apk"),
                   "arm64-v8a": find("-arm64-v8a.apk"),
