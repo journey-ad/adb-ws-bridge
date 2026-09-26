@@ -6,20 +6,20 @@ plugins {
 }
 
 /** 只取标准输出，git 在无匹配对象时把提示写进标准错误，混进来会污染版本名 */
-fun git(args: List<String>): String = runCatching {
-    ProcessBuilder(listOf("git") + args)
-        .directory(rootProject.projectDir)
-        .start()
-        .inputStream.bufferedReader().readText().trim()
+fun git(vararg args: String): String = runCatching {
+    providers.exec {
+        commandLine("git", *args)
+        workingDir = rootProject.projectDir
+    }.standardOutput.asText.get().trim()
 }.getOrDefault("")
 
 fun getGitHash(): String {
-    val hash = git(listOf("rev-parse", "--short=7", "HEAD"))
+    val hash = git("rev-parse", "--short=7", "HEAD")
     return hash.takeIf { it.matches(Regex("[0-9a-f]{7,40}")) } ?: "unknown"
 }
 
 fun getBaseVersion(): String {
-    val tag = git(listOf("describe", "--tags", "--abbrev=0")).removePrefix("v")
+    val tag = git("describe", "--tags", "--abbrev=0").removePrefix("v")
     return tag.takeIf { it.matches(Regex("\\d+(\\.\\d+)*")) } ?: "0.1.0"
 }
 
