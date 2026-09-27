@@ -13,6 +13,7 @@ import moe.shizuku.manager.adb.AdbPairingClient
 import moe.shizuku.manager.adb.PreferenceAdbKeyStore
 import re.ovo.adbbridge.R
 import re.ovo.adbbridge.bridge.AdbTunnel
+import re.ovo.adbbridge.bridge.BridgeController
 import re.ovo.adbbridge.bridge.BridgeStatus
 import re.ovo.adbbridge.util.appString
 
@@ -71,9 +72,15 @@ class PairingManager(context: Context) {
     }
 
     fun markUnpaired() {
-        preferences.edit().putBoolean(KEY_PAIRED, false).apply()
-        BridgeStatus.paired.value = false
+        setPaired(false)
         BridgeStatus.log(appContext.appString(R.string.log_pairing_expired))
+    }
+
+    /** 配对状态变化后同步磁贴与小组件，两者都按配对与否取不同图标与文案 */
+    private fun setPaired(paired: Boolean) {
+        preferences.edit().putBoolean(KEY_PAIRED, paired).apply()
+        BridgeStatus.paired.value = paired
+        BridgeController.refreshSurfaces(appContext)
     }
 
     fun discoverPairingPort() {
@@ -104,8 +111,7 @@ class PairingManager(context: Context) {
         return try {
             val ok = client.start()
             if (ok) {
-                preferences.edit().putBoolean(KEY_PAIRED, true).apply()
-                BridgeStatus.paired.value = true
+                setPaired(true)
                 BridgeStatus.log(appContext.appString(R.string.log_pairing_success))
             } else {
                 BridgeStatus.log(appContext.appString(R.string.log_pairing_failed))

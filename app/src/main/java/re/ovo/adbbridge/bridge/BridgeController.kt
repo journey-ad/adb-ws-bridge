@@ -1,9 +1,7 @@
 package re.ovo.adbbridge.bridge
 
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.service.quicksettings.TileService
 import re.ovo.adbbridge.pairing.PairingManager
 import re.ovo.adbbridge.tile.BridgeTileService
 import re.ovo.adbbridge.widget.BridgeWidgetProvider
@@ -29,12 +27,7 @@ object BridgeController {
 
     /** 服务状态变化后刷新磁贴与小组件，force 为 false 时小组件按自身间隔节流 */
     fun refreshSurfaces(context: Context, force: Boolean = true) {
-        runCatching {
-            TileService.requestListeningState(
-                context,
-                ComponentName(context, BridgeTileService::class.java),
-            )
-        }
+        runCatching { BridgeTileService.refresh(context) }
         BridgeWidgetProvider.refresh(context, force)
     }
 }
