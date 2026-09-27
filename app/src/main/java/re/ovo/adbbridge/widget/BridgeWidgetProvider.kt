@@ -96,7 +96,7 @@ class BridgeWidgetProvider : AppWidgetProvider() {
                 "setBackgroundResource",
                 if (dark) R.drawable.widget_button_dark else R.drawable.widget_button_light,
             )
-            views.setImageViewResource(R.id.widget_toggle, R.drawable.ic_bridge_tile)
+            views.setImageViewResource(R.id.widget_toggle, status.iconRes)
             views.setContentDescription(
                 R.id.widget_toggle,
                 context.appString(
@@ -170,26 +170,31 @@ class BridgeWidgetProvider : AppWidgetProvider() {
                     context.appString(R.string.status_unpaired),
                     Palette.warning(dark),
                     R.drawable.widget_pill_warning,
+                    R.drawable.ic_tile_unpaired,
                 )
                 !portFree -> WidgetContent(
                     context.appString(R.string.widget_port_in_use),
                     Palette.danger(dark),
                     R.drawable.widget_pill_danger,
+                    R.drawable.ic_tile_idle,
                 )
                 BridgeStatus.connected.value -> WidgetContent(
                     context.appString(R.string.status_connected),
                     Palette.online(dark),
                     R.drawable.widget_pill_online,
+                    R.drawable.ic_tile_connected,
                 )
                 running -> WidgetContent(
                     context.appString(R.string.widget_waiting),
                     Palette.offline(dark),
                     R.drawable.widget_pill_offline,
+                    R.drawable.ic_tile_waiting,
                 )
                 else -> WidgetContent(
                     context.appString(R.string.status_stopped),
                     Palette.offline(dark),
                     R.drawable.widget_pill_offline,
+                    R.drawable.ic_tile_idle,
                 )
             }
         }
@@ -222,10 +227,12 @@ class BridgeWidgetProvider : AppWidgetProvider() {
     }
 }
 
+/** iconRes 与磁贴取同一组图标，四种状态各一个 */
 private class WidgetContent(
     val state: String,
     val stateColor: Int,
     val pillRes: Int,
+    val iconRes: Int,
 )
 
 /** 与界面 StatusColors 取同一组颜色 */

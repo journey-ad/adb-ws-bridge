@@ -14,6 +14,12 @@
     <string name="status_connecting">连接中</string>
     <string name="status_stopped">已停止</string>
 
+    <!-- 磁贴标题 -->
+    <string name="tile_label_unpaired">ADB 未配对</string>
+    <string name="tile_label_off">ADB 未开启</string>
+    <string name="tile_label_waiting">ADB 未连接</string>
+    <string name="tile_label_connected">ADB 已连接</string>
+
     <!-- 转发页 -->
     <string name="forward_running">转发服务运行中</string>
     <string name="forward_stopped">转发服务已停止</string>

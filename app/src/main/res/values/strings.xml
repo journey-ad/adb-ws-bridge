@@ -15,6 +15,12 @@
     <string name="status_connecting">Connecting</string>
     <string name="status_stopped">Stopped</string>
 
+    <!-- 磁贴标题 -->
+    <string name="tile_label_unpaired">ADB Not paired</string>
+    <string name="tile_label_off">ADB Off</string>
+    <string name="tile_label_waiting">ADB Not connected</string>
+    <string name="tile_label_connected">ADB Connected</string>
+
     <!-- 转发页 -->
     <string name="forward_running">Forwarding service running</string>
     <string name="forward_stopped">Forwarding service stopped</string>
