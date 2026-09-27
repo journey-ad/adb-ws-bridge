@@ -15,6 +15,7 @@ import re.ovo.adbbridge.R
 import re.ovo.adbbridge.bridge.BridgeController
 import re.ovo.adbbridge.bridge.BridgeServer
 import re.ovo.adbbridge.bridge.BridgeStatus
+import re.ovo.adbbridge.bridge.ConnectionSnapshot
 import re.ovo.adbbridge.data.AppPrefs
 import re.ovo.adbbridge.util.appString
 import re.ovo.adbbridge.util.formatBytes
@@ -49,17 +50,31 @@ class BridgeWidgetProvider : AppWidgetProvider() {
         private const val MUTED_DARK = 0xFFA9B0C0.toInt()
 
         /** 连接快照每秒更新，小组件按此间隔取一次最新数据 */
-        private const val REFRESH_INTERVAL_MS = 5_000L
+        private const val REFRESH_INTERVAL_MS = 1_000L
 
         private var renderedAt = 0L
 
+        /**
+         * force 为 true 时全量重建，状态、配色、端口探测都在这一路径
+         * 其余情况只提交逐秒变化的字段，省掉每秒重建视图与探测端口
+         */
         fun refresh(context: Context, force: Boolean = false) {
             val now = SystemClock.elapsedRealtime()
             if (!force && now - renderedAt < REFRESH_INTERVAL_MS) return
             renderedAt = now
             val manager = AppWidgetManager.getInstance(context) ?: return
             val ids = manager.getAppWidgetIds(ComponentName(context, BridgeWidgetProvider::class.java))
-            ids.forEach { render(context, manager, it) }
+            ids.forEach {
+                if (force) render(context, manager, it) else updateMetrics(context, manager, it)
+            }
+        }
+
+        /** 部分更新只提交变化的字段，其余沿用上次全量结果；要求该小组件至少全量更新过一次 */
+        private fun updateMetrics(context: Context, manager: AppWidgetManager, id: Int) {
+            val views = RemoteViews(context.packageName, R.layout.widget_bridge)
+            lanRows(views, getLanAddresses(), AppPrefs.wsPort.value)
+            metrics(context, views, BridgeStatus.connection.value)
+            manager.partiallyUpdateAppWidget(id, views)
         }
 
         private fun render(context: Context, manager: AppWidgetManager, id: Int) {
@@ -70,7 +85,6 @@ class BridgeWidgetProvider : AppWidgetProvider() {
             val snapshot = BridgeStatus.connection.value
             val addresses = getLanAddresses()
             val port = AppPrefs.wsPort.value
-            val second = addresses.getOrNull(1)
             val views = RemoteViews(context.packageName, R.layout.widget_bridge)
             views.setInt(
                 R.id.widget_root,
@@ -91,12 +105,36 @@ class BridgeWidgetProvider : AppWidgetProvider() {
             )
             views.setTextViewText(R.id.widget_title, context.appString(R.string.app_name))
             views.setTextColor(R.id.widget_title, if (dark) TITLE_DARK else TITLE_LIGHT)
+            lanRows(views, addresses, port)
+            metrics(context, views, snapshot)
+            listOf(
+                R.id.widget_address,
+                R.id.widget_address_second,
+                R.id.widget_client,
+                R.id.widget_throughput,
+                R.id.widget_speed,
+            ).forEach { views.setTextColor(it, muted) }
+            views.setTextViewText(R.id.widget_state, status.state)
+            views.setTextColor(R.id.widget_state, status.stateColor)
+            views.setInt(R.id.widget_state, "setBackgroundResource", status.pillRes)
+            views.setOnClickPendingIntent(R.id.widget_root, openApp(context))
+            views.setOnClickPendingIntent(R.id.widget_toggle, toggle(context))
+            manager.updateAppWidget(id, views)
+        }
+
+        /** 两行本机地址，局域网切换时地址会变，跟随逐秒更新一并提交 */
+        private fun lanRows(views: RemoteViews, addresses: List<String>, port: Int) {
+            val second = addresses.getOrNull(1)
             views.setTextViewText(R.id.widget_address, url(addresses.firstOrNull(), port))
             views.setViewVisibility(
                 R.id.widget_address_second,
                 if (second == null) View.GONE else View.VISIBLE,
             )
             views.setTextViewText(R.id.widget_address_second, second?.let { url(it, port) }.orEmpty())
+        }
+
+        /** 会话期间逐秒变化的字段，全量与部分更新共用 */
+        private fun metrics(context: Context, views: RemoteViews, snapshot: ConnectionSnapshot?) {
             views.setTextViewText(
                 R.id.widget_client,
                 labeled(
@@ -121,19 +159,6 @@ class BridgeWidgetProvider : AppWidgetProvider() {
                     snapshot?.let { traffic(formatRate(it.upRate), formatRate(it.downRate)) },
                 ),
             )
-            listOf(
-                R.id.widget_address,
-                R.id.widget_address_second,
-                R.id.widget_client,
-                R.id.widget_throughput,
-                R.id.widget_speed,
-            ).forEach { views.setTextColor(it, muted) }
-            views.setTextViewText(R.id.widget_state, status.state)
-            views.setTextColor(R.id.widget_state, status.stateColor)
-            views.setInt(R.id.widget_state, "setBackgroundResource", status.pillRes)
-            views.setOnClickPendingIntent(R.id.widget_root, openApp(context))
-            views.setOnClickPendingIntent(R.id.widget_toggle, toggle(context))
-            manager.updateAppWidget(id, views)
         }
 
         private fun widgetStatus(context: Context, dark: Boolean): WidgetContent {
