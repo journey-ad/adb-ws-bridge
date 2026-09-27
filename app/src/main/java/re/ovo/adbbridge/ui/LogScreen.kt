@@ -31,6 +31,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,6 +58,9 @@ private enum class LogBody { DISABLED, IDLE, LIST }
 
 /** 日志行定高，列表滚动定位不逐项测量 */
 private val LOG_ROW_HEIGHT = 34.dp
+
+/** 距末尾这么多行以内仍按停在末尾处理 */
+private const val STICK_ITEMS = 2
 
 @Composable
 fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
@@ -86,6 +90,15 @@ fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
         else -> LogBody.LIST
     }
 
+    // 末尾两项以内都算停在末尾：日志增长会挤出旧条目，滚动位置相对末尾不会自己变
+    val atEnd by remember {
+        derivedStateOf {
+            val info = listState.layoutInfo
+            val last = info.visibleItemsInfo.lastOrNull()
+            last == null || info.totalItemsCount - 1 - last.index <= STICK_ITEMS
+        }
+    }
+
     // 切换会话时定位到末尾，之后只在用户本来就停在末尾时才跟随新日志
     // 用请求式滚动，挂起版会在长列表里一直等待布局稳定
     LaunchedEffect(selectedId, autoScroll) {
@@ -94,8 +107,9 @@ fun LogScreen(viewModel: MainViewModel, onOpenHistory: () -> Unit) {
         }
     }
 
-    LaunchedEffect(entries.size) {
-        if (autoScroll && !listState.canScrollForward && entries.isNotEmpty()) {
+    // 日志条数到 LOG_WINDOW 后不再变化，用末尾条目的序号判断有没有新日志
+    LaunchedEffect(entries.lastOrNull()?.seq) {
+        if (autoScroll && atEnd && entries.isNotEmpty()) {
             PerfTrace.measure("log.scrollToEnd") { listState.requestScrollToItem(entries.lastIndex) }
         }
     }
