@@ -1,0 +1,26 @@
+{
+  "version": "v0.2.1",
+  "repository": "journey-ad/adb-ws-bridge",
+  "commit": "733c9c30a39e01bf1e32654598cd5fffadc60c6a",
+  "shortCommit": "733c9c3",
+  "publishedAt": "2026-09-27T04:01:28Z",
+  "releaseUrl": "https://github.com/journey-ad/adb-ws-bridge/releases/tag/v0.2.1",
+  "assets": {
+    "universal": {
+      "url": "https://github.com/journey-ad/adb-ws-bridge/releases/download/v0.2.1/ADBBridge-v0.2.1-universal.apk",
+      "size": 13037483
+    },
+    "arm64-v8a": {
+      "url": "https://github.com/journey-ad/adb-ws-bridge/releases/download/v0.2.1/ADBBridge-v0.2.1-arm64-v8a.apk",
+      "size": 9767844
+    },
+    "armeabi-v7a": {
+      "url": "https://github.com/journey-ad/adb-ws-bridge/releases/download/v0.2.1/ADBBridge-v0.2.1-armeabi-v7a.apk",
+      "size": 9590411
+    },
+    "x86_64": {
+      "url": "https://github.com/journey-ad/adb-ws-bridge/releases/download/v0.2.1/ADBBridge-v0.2.1-x86_64.apk",
+      "size": 9821721
+    }
+  }
+}
