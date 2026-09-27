@@ -181,6 +181,7 @@
     <string name="log_no_connection">当前没有可断开的连接</string>
     <string name="log_disconnected">已主动断开连接</string>
     <string name="log_pairing_verify_failed">配对校验失败：%1$s</string>
+    <string name="log_pairing_probe_timeout">配对探测未在限定时间内收到回包</string>
     <string name="log_pairing_port_unknown">未能确认配对状态：未发现设备连接端口</string>
     <string name="log_pairing_expired">配对已失效，请重新配对</string>
     <string name="log_pairing_port_found">发现配对端口 %1$d</string>

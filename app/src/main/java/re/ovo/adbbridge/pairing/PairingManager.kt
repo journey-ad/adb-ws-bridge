@@ -2,8 +2,8 @@ package re.ovo.adbbridge.pairing
 
 import android.content.Context
 import androidx.lifecycle.Observer
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -35,29 +35,37 @@ class PairingManager(context: Context) {
     /**
      * 配对标记存在本地，系统里撤销无线调试授权后它不会自己失效，所以要用一次握手确认
      * 确认方式是建立隧道后执行一条 shell 命令，adbd 不认这把钥匙时不会回包
+     * 单次探测超时或中途出错只说明这次没确认，连续 PROBE_ATTEMPTS 次都没有回包才认定失效
      */
     suspend fun verifyPaired(): Boolean = withContext(Dispatchers.IO) {
         val port = awaitConnectPort()
         if (port <= 0) return@withContext false
-        val tunnel = AdbTunnel(CONNECT_HOST, port, key)
-        try {
-            tunnel.connect()
-            val output = withTimeoutOrNull(PROBE_TIMEOUT_MS) {
-                async { runCatching { tunnel.selfTest() }.getOrNull() }.await()
+        repeat(PROBE_ATTEMPTS) {
+            val tunnel = AdbTunnel(CONNECT_HOST, port, key)
+            var connected = false
+            val output = try {
+                tunnel.connect()
+                connected = true
+                withTimeoutOrNull(PROBE_TIMEOUT_MS) { tunnel.selfTest() }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                BridgeStatus.log(appContext.appString(R.string.log_pairing_verify_failed, e.message))
+                if (!connected) {
+                    markUnpaired()
+                    return@withContext false
+                }
+                null
+            } finally {
+                runCatching { tunnel.close() }
             }
-            if (output?.contains(PROBE_ECHO) == true) {
-                true
-            } else {
-                markUnpaired()
-                false
+            if (output == null) {
+                BridgeStatus.log(appContext.appString(R.string.log_pairing_probe_timeout))
             }
-        } catch (e: Exception) {
-            BridgeStatus.log(appContext.appString(R.string.log_pairing_verify_failed, e.message))
-            markUnpaired()
-            false
-        } finally {
-            runCatching { tunnel.close() }
+            if (output?.contains(PROBE_ECHO) == true) return@withContext true
         }
+        markUnpaired()
+        false
     }
 
     private suspend fun awaitConnectPort(): Int {
@@ -144,6 +152,7 @@ class PairingManager(context: Context) {
         private const val CONNECT_HOST = "127.0.0.1"
         private const val PROBE_ECHO = "tunnel-ok"
         private const val PROBE_TIMEOUT_MS = 4000L
+        private const val PROBE_ATTEMPTS = 2
         private const val DISCOVERY_ATTEMPTS = 30
         private const val DISCOVERY_INTERVAL_MS = 100L
     }

@@ -182,6 +182,7 @@
     <string name="log_no_connection">No connection to disconnect</string>
     <string name="log_disconnected">Connection closed on request</string>
     <string name="log_pairing_verify_failed">Pairing check failed: %1$s</string>
+    <string name="log_pairing_probe_timeout">Pairing probe got no reply in time</string>
     <string name="log_pairing_port_unknown">Pairing state not confirmed, no device connect port found</string>
     <string name="log_pairing_expired">Pairing expired, pair the device again</string>
     <string name="log_pairing_port_found">Pairing port %1$d found</string>
