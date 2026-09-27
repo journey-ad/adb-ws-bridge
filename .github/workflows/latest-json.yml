@@ -1,9 +1,12 @@
 name: Publish latest.json
 
+# 打 tag 的发布流程由 android.yml 在创建 release 后直接生成索引，这里只用于手动重跑
 on:
-  release:
-    types: [published]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 要索引的 tag，留空取最新 release
+        required: false
 
 permissions:
   contents: write
@@ -14,59 +17,11 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: Build latest.json
+      - uses: actions/checkout@v4
+
+      - name: Publish latest.json
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          TAG: ${{ github.event.release.tag_name }}
-        run: |
-          mkdir -p public
-          if [ -n "$TAG" ]; then
-            gh api "repos/$REPO/releases/tags/$TAG" > release.json
-          else
-            gh api "repos/$REPO/releases/latest" > release.json
-          fi
-          VERSION=$(python3 -c "import json;print(json.load(open('release.json'))['tag_name'])")
-          gh api "repos/$REPO/commits/$VERSION" --jq .sha > commit.txt
-          COMMIT="$(cat commit.txt)" python3 - <<'PY'
-          import json, os
-
-          release = json.load(open("release.json"))
-          commit = os.environ["COMMIT"].strip()
-
-          def find(suffix):
-              for asset in release["assets"]:
-                  if asset["name"].endswith(suffix):
-                      return {"url": asset["browser_download_url"], "size": asset["size"]}
-              return None
-
-          data = {
-              "version": release["tag_name"],
-              "repository": os.environ["REPO"],
-              "commit": commit,
-              "shortCommit": commit[:7],
-              "publishedAt": release["published_at"],
-              "releaseUrl": release["html_url"],
-              "assets": {
-                  "universal": find("-universal.apk"),
-                  "arm64-v8a": find("-arm64-v8a.apk"),
-                  "armeabi-v7a": find("-armeabi-v7a.apk"),
-                  "x86_64": find("-x86_64.apk"),
-              },
-          }
-          with open("public/latest.json", "w") as f:
-              json.dump(data, f, ensure_ascii=False, indent=2)
-          PY
-
-      - name: Push to index
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-        run: |
-          cd public
-          git init -b index
-          git add latest.json
-          git -c user.name="github-actions[bot]" \
-              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-              commit -m "chore：更新 latest.json"
-          git push --force "https://x-access-token:$GH_TOKEN@github.com/$REPO.git" index
+          TAG: ${{ inputs.tag }}
+        run: bash .github/scripts/publish-latest-json.sh

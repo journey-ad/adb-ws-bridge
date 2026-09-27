@@ -144,3 +144,11 @@ jobs:
           files: app/build/outputs/apk/release/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # release 由 GITHUB_TOKEN 创建，不会再触发监听 release 事件的工作流，索引只能在这里出
+      - name: Publish latest.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: bash .github/scripts/publish-latest-json.sh
