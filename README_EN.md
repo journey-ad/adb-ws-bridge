@@ -36,6 +36,8 @@ Only one connection is accepted at a time. A new client needs confirmation on th
 - New clients require confirmation on the device, authorized clients connect directly and can be revoked in settings
 - Optional connection password verified when the browser connects
 - Live connection details: client, duration, and upstream and downstream rates
+- Quick settings tile toggles forwarding with one tap, long press opens the app
+- Home screen widget shows the running status and connection address, start or stop from the widget
 - Logs grouped into sessions per connection, with search, detail view and deletion, keeping the latest 20 connection sessions
 - Logs can stay in memory only, without being written to storage
 - Chinese and English interface, light and dark theme
