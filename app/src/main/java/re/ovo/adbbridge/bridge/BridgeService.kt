@@ -330,7 +330,7 @@ class BridgeService : Service() {
         private const val DENY_REQUEST_CODE = 4
         private const val AUTH_TIMEOUT_MS = 60_000L
         private const val DISCOVERY_TIMEOUT_MS = 5_000L
-        private const val NOTIFY_MIN_INTERVAL_MS = 2_000L
+        private const val NOTIFY_MIN_INTERVAL_MS = 1_000L
     }
 
     override fun onDestroy() {
